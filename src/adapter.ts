@@ -8,16 +8,21 @@ import {
 } from "@decaf-ts/for-couchdb";
 import * as Nano from "nano";
 import { DocumentScope, ServerScope } from "nano";
+import { User } from "@decaf-ts/core";
 
 export class NanoAdapter extends CouchDBAdapter {
   constructor(scope: DocumentScope<any>, flavour: string) {
     super(scope, flavour);
   }
 
-  async user() {
+  async user(): Promise<User> {
     try {
       const user: DatabaseSessionResponse = await this.native.server.session();
-      return user.userCtx.name;
+      return new User({
+        id: user.userCtx.name,
+        roles: user.userCtx.roles,
+        affiliations: user.userCtx.affiliations,
+      });
     } catch (e: any) {
       throw this.parseError(e);
     }
