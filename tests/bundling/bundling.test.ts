@@ -17,7 +17,7 @@ describe("Distribution Tests", () => {
       VERSION,
       complexFunction,
       ChildClass,
-    } = require("../../dist/ts-workspace.bundle.min.js");
+    } = require("../../dist/for-nano.bundle.min.js");
     expect(VERSION).toBeDefined();
     expect(complexFunction).toBeDefined();
     expect(ChildClass).toBeDefined();

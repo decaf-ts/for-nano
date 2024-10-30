@@ -1,17 +1,9 @@
-export * from "./utils";
-export * from "./namespace";
+export * from "./adapter";
 
 /**
  * @summary Module summary
  * @description Module description
- * @module ts-workspace
- */
-
-/**
- * @summary Namespace summary
- * @description Namespace description
- * @namespace Namespace
- * @memberOf module:ts-workspace
+ * @module for-nano
  */
 
 /**

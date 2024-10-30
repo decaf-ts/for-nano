@@ -14,6 +14,10 @@ import webpack from "webpack-stream";
 import run from "gulp-run-command";
 import process from "node:process";
 
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
 import pkg from "./package.json" assert { type: "json" };
 import fs from "fs";
 let { name, version } = pkg;
@@ -59,6 +63,9 @@ function getWebpackConfig(isESM, isDev) {
     resolve: {
       extensions: [".ts", ".js"],
       fallback: {
+        http: require.resolve("stream-http"),
+        https: require.resolve("https-browserify"),
+        url: require.resolve("url"),
         path: false,
         fs: false,
         stream: false,
