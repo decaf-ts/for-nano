@@ -102,9 +102,16 @@ describe(`Complex Database`, function () {
       const record = new TestCountryModel(model);
       const created = await testCountryModelRepository.create(record);
       expect(created).toBeDefined();
-      expect(created.equals(record, "createdOn", "updatedOn", "id")).toEqual(
-        true
-      );
+      expect(
+        created.equals(
+          record,
+          "createdOn",
+          "updatedOn",
+          "createdBy",
+          "updatedBy",
+          "id"
+        )
+      ).toEqual(true);
       expect(created.id).toEqual(1);
       cached = created;
     });
