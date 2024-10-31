@@ -109,7 +109,7 @@ export class NanoAdapter extends CouchDBAdapter {
   }
 
   static async deleteUser(con: ServerScope, dbName: string, user: string) {
-    const users = await con.db.use("_users");
+    const users = con.db.use("_users");
     const id = "org.couchdb.user:" + user;
     try {
       const usr = await users.get(id);
