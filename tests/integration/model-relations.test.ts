@@ -70,7 +70,7 @@ describe(`Complex Database`, function () {
   let model: any;
 
   beforeAll(async () => {
-    sequenceRepository = Repository.forModel(Seq);
+    sequenceRepository = new Repository(adapter, Seq);
     expect(sequenceRepository).toBeDefined();
 
     userRepository = new Repository(adapter, TestUserModel);
