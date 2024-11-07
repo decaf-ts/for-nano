@@ -2,13 +2,14 @@ import { InternalError } from "@decaf-ts/db-decorators";
 import "reflect-metadata";
 import {
   CouchDBAdapter,
+  CouchDBKeys,
   DatabaseSessionResponse,
   DocumentInsertResponse,
   MaybeDocument,
 } from "@decaf-ts/for-couchdb";
 import * as Nano from "nano";
-import { DocumentScope, ServerScope } from "nano";
-import { User } from "@decaf-ts/core";
+import { DocumentBulkResponse, DocumentScope, ServerScope } from "nano";
+import { PersistenceKeys, User } from "@decaf-ts/core";
 
 export class NanoAdapter extends CouchDBAdapter {
   constructor(scope: DocumentScope<any>, flavour: string) {
@@ -26,6 +27,61 @@ export class NanoAdapter extends CouchDBAdapter {
     } catch (e: any) {
       throw this.parseError(e);
     }
+  }
+
+  async readAll(
+    tableName: string,
+    ids: (string | number | bigint)[]
+  ): Promise<Record<string, any>[]> {
+    const results = await this.native.fetch(
+      { keys: ids.map((id) => this.generateId(tableName, id as any)) },
+      {}
+    );
+    return results.rows.map((r) => {
+      if ((r as any).error) throw new InternalError((r as any).error);
+      if ((r as any).doc) {
+        const res = Object.assign({}, (r as any).doc);
+        Object.defineProperty(res, PersistenceKeys.METADATA, {
+          enumerable: false,
+          writable: false,
+          value: (r as any).doc[CouchDBKeys.REV],
+        });
+        return res;
+      }
+      throw new InternalError("Should be impossible");
+    });
+  }
+
+  async deleteAll(
+    tableName: string,
+    ids: (string | number | bigint)[]
+  ): Promise<Record<string, any>[]> {
+    const results = await this.native.fetch(
+      { keys: ids.map((id) => this.generateId(tableName, id as any)) },
+      {}
+    );
+    const deletion: DocumentBulkResponse[] = await this.native.bulk({
+      docs: results.rows.map((r) => {
+        (r as any)[CouchDBKeys.DELETED] = true;
+        return r;
+      }),
+    });
+    deletion.forEach((d: DocumentBulkResponse) => {
+      if (d.error) console.error(d.error);
+    });
+    return results.rows.map((r) => {
+      if ((r as any).error) throw new InternalError((r as any).error);
+      if ((r as any).doc) {
+        const res = Object.assign({}, (r as any).doc);
+        Object.defineProperty(res, PersistenceKeys.METADATA, {
+          enumerable: false,
+          writable: false,
+          value: (r as any).doc[CouchDBKeys.REV],
+        });
+        return res;
+      }
+      throw new InternalError("Should be impossible");
+    });
   }
 
   static connect(
