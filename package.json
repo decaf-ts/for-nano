@@ -105,13 +105,14 @@
     "vinyl-named": "^1.1.0",
     "webpack-stream": "^7.0.0"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@decaf-ts/core": "latest",
     "@decaf-ts/db-decorators": "latest",
     "@decaf-ts/decorator-validation": "latest",
     "@decaf-ts/for-couchdb": "latest",
     "@decaf-ts/injectable-decorators": "latest",
     "@decaf-ts/reflection": "latest",
+    "reflect-metadata": "^0.2.1",
     "nano": "^10.1.4"
   }
 }
