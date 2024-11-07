@@ -1,4 +1,5 @@
 export * from "./adapter";
+export * from "./NanoRepository";
 
 /**
  * @summary Module summary
