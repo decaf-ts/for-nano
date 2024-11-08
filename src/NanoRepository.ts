@@ -1,9 +1,10 @@
 import { Model } from "@decaf-ts/decorator-validation";
 import { MangoQuery } from "@decaf-ts/for-couchdb";
-import { NanoAdapter } from "./adapter";
-import { Repository } from "@decaf-ts/core";
+import { Adapter, Repository } from "@decaf-ts/core";
+import { DocumentScope } from "nano";
 
-export interface NanoRepository<M extends Model>
-  extends Repository<M, MangoQuery> {
-  adapter: NanoAdapter;
-}
+export type NanoRepository<M extends Model> = Repository<
+  M,
+  MangoQuery,
+  Adapter<DocumentScope<any>, MangoQuery>
+>;

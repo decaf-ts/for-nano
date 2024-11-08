@@ -3,8 +3,9 @@ import { PersistenceKeys, Repository } from "@decaf-ts/core";
 import { Model } from "@decaf-ts/decorator-validation";
 import { TestModel } from "../TestModel";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
-import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
+import { NanoRepository } from "../../src";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -19,8 +20,8 @@ jest.setTimeout(50000);
 
 describe("Adapter Integration", () => {
   let con: ServerScope;
-  let adapter: CouchDBAdapter;
-  let repo: Repository<TestModel, any>;
+  let adapter: NanoAdapter;
+  let repo: NanoRepository<TestModel>;
 
   beforeAll(async () => {
     con = await NanoAdapter.connect(admin, admin_password, dbHost);
@@ -36,7 +37,7 @@ describe("Adapter Integration", () => {
       wrapDocumentScope(con, dbName, user, user_password),
       "nano"
     );
-    repo = new Repository<TestModel>(adapter, TestModel);
+    repo = new Repository(adapter, TestModel);
   });
 
   afterAll(async () => {

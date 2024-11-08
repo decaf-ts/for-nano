@@ -24,7 +24,7 @@ import {
 } from "@decaf-ts/db-decorators";
 import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
-import { CouchDBRepository } from "@decaf-ts/for-couchdb";
+import { NanoRepository } from "../../src";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -89,9 +89,9 @@ describe("Queries", () => {
   let created: TestUser[];
 
   it("Creates in bulk", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const models = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
       (i) =>
@@ -109,9 +109,9 @@ describe("Queries", () => {
   });
 
   it("Performs simple queries - full object", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const selected = await repo.select().execute<TestUser[]>();
     expect(
@@ -120,9 +120,9 @@ describe("Queries", () => {
   });
 
   it("Performs simple queries - attributes only", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const selected = await repo
       .select(["age", "sex"])
@@ -141,9 +141,9 @@ describe("Queries", () => {
   });
 
   it("Performs conditional queries - full object", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const condition = Condition.attribute("age").eq(20);
     const selected = await repo.select().where(condition).execute<TestUser[]>();
@@ -151,9 +151,9 @@ describe("Queries", () => {
   });
 
   it("Performs conditional queries - selected attributes", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const condition = Condition.attribute("age").eq(20);
     const selected = await repo
@@ -175,9 +175,9 @@ describe("Queries", () => {
   });
 
   it("Performs AND conditional queries - full object", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const condition = Condition.attribute("age")
       .eq(20)
@@ -189,10 +189,9 @@ describe("Queries", () => {
   });
 
   it("Performs OR conditional queries - full object", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
-      TestUser,
-      CouchDBRepository<TestUser>
-    >(TestUser);
+    const repo = Repository.forModel<TestUser, NanoRepository<TestUser>>(
+      TestUser
+    );
     const condition = Condition.attribute("age")
       .eq(20)
       .or(Condition.attribute("age").eq(19));
@@ -203,9 +202,9 @@ describe("Queries", () => {
   });
 
   it("fails to Sorts attribute without indexes", async () => {
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     await expect(() =>
       repo.select().orderBy(["name", OrderDirection.DSC]).execute<TestUser[]>()
@@ -214,9 +213,9 @@ describe("Queries", () => {
 
   it("Sorts attribute when indexed", async () => {
     await adapter.initialize();
-    const repo: CouchDBRepository<TestUser> = Repository.forModel<
+    const repo: NanoRepository<TestUser> = Repository.forModel<
       TestUser,
-      CouchDBRepository<TestUser>
+      NanoRepository<TestUser>
     >(TestUser);
     const sorted = await repo
       .select()

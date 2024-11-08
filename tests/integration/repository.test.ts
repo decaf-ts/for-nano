@@ -3,8 +3,9 @@ import { ServerScope } from "nano";
 import { repository, Repository, uses } from "@decaf-ts/core";
 import { TestModel } from "../TestModel";
 import { ConflictError } from "@decaf-ts/db-decorators";
-import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
+import { NanoRepository } from "../../src";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -19,8 +20,7 @@ jest.setTimeout(50000);
 
 describe("repositories", () => {
   let con: ServerScope;
-  let adapter: CouchDBAdapter;
-  let repo: Repository<TestModel, any>;
+  let adapter: NanoAdapter;
 
   beforeAll(async () => {
     con = NanoAdapter.connect(admin, admin_password, dbHost);
@@ -43,7 +43,10 @@ describe("repositories", () => {
   });
 
   it("instantiates via constructor", () => {
-    const repo = new Repository(adapter, TestModel);
+    const repo: NanoRepository<TestModel> = new Repository(
+      adapter as any,
+      TestModel
+    );
     expect(repo).toBeDefined();
     expect(repo).toBeInstanceOf(Repository);
   });
@@ -58,7 +61,7 @@ describe("repositories", () => {
   it("gets injected when using @repository", () => {
     class TestClass {
       @repository(TestModel)
-      repo!: Repository<TestModel>;
+      repo!: NanoRepository<TestModel>;
     }
 
     const testClass = new TestClass();

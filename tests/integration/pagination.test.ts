@@ -3,8 +3,9 @@ import { ServerScope } from "nano";
 import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
 import { OrderDirection, Paginator, Repository } from "@decaf-ts/core";
 import { TestCountryModel } from "./models";
-import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
+import { NanoRepository } from "../../src";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -19,8 +20,8 @@ jest.setTimeout(500000);
 
 describe(`Pagination`, function () {
   let con: ServerScope;
-  let adapter: CouchDBAdapter;
-  let repo: Repository<TestCountryModel>;
+  let adapter: NanoAdapter;
+  let repo: NanoRepository<TestCountryModel>;
 
   let created: TestCountryModel[];
   const size = 100;

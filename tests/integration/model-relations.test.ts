@@ -19,8 +19,9 @@ import { Condition, Repository } from "@decaf-ts/core";
 import { sequenceNameForModel } from "@decaf-ts/core";
 import { Sequence } from "@decaf-ts/core";
 import { Sequence as Seq } from "@decaf-ts/for-couchdb";
-import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
+import { NanoRepository } from "../../src";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -35,7 +36,7 @@ jest.setTimeout(500000);
 
 describe(`Complex Database`, function () {
   let con: ServerScope;
-  let adapter: CouchDBAdapter;
+  let adapter: NanoAdapter;
 
   beforeAll(async () => {
     con = NanoAdapter.connect(admin, admin_password, dbHost);
@@ -57,15 +58,15 @@ describe(`Complex Database`, function () {
     await NanoAdapter.deleteDatabase(con, dbName);
   });
 
-  let sequenceRepository: Repository<Seq>;
-  let userRepository: Repository<TestUserModel>;
-  let testDummyCountryModelRepository: Repository<TestDummyCountry>;
-  let testPhoneModelRepository: Repository<TestPhoneModel>;
-  let testDummyPhoneModelRepository: Repository<TestDummyPhone>;
-  let testAddressModelRepository: Repository<TestAddressModel>;
-  let testCountryModelRepository: Repository<TestCountryModel>;
-  let noPopulateOnceModelRepository: Repository<NoPopulateOnceModel>;
-  let noPopulateManyModelRepository: Repository<NoPopulateManyModel>;
+  let sequenceRepository: NanoRepository<Seq>;
+  let userRepository: NanoRepository<TestUserModel>;
+  let testDummyCountryModelRepository: NanoRepository<TestDummyCountry>;
+  let testPhoneModelRepository: NanoRepository<TestPhoneModel>;
+  let testDummyPhoneModelRepository: NanoRepository<TestDummyPhone>;
+  let testAddressModelRepository: NanoRepository<TestAddressModel>;
+  let testCountryModelRepository: NanoRepository<TestCountryModel>;
+  let noPopulateOnceModelRepository: NanoRepository<NoPopulateOnceModel>;
+  let noPopulateManyModelRepository: NanoRepository<NoPopulateManyModel>;
 
   let model: any;
 

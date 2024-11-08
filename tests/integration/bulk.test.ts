@@ -8,9 +8,9 @@ import {
 } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
-import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
-import { CouchDBRepository } from "@decaf-ts/for-couchdb/lib/interfaces";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
+import { NanoRepository } from "../../src";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -25,7 +25,8 @@ jest.setTimeout(50000);
 
 describe("Bulk operations", () => {
   let con: ServerScope;
-  let adapter: CouchDBAdapter;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let adapter: NanoAdapter;
 
   beforeAll(async () => {
     con = NanoAdapter.connect(admin, admin_password, dbHost);
@@ -66,9 +67,9 @@ describe("Bulk operations", () => {
   let updated: TestBulkModel[];
 
   it.skip("creates one", async () => {
-    const repo: CouchDBRepository<TestBulkModel> = Repository.forModel<
+    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
       TestBulkModel,
-      CouchDBRepository<TestBulkModel>
+      NanoRepository<TestBulkModel>
     >(TestBulkModel);
     const created = await repo.create(
       new TestBulkModel({
@@ -79,9 +80,9 @@ describe("Bulk operations", () => {
   });
 
   it("Creates in bulk", async () => {
-    const repo: CouchDBRepository<TestBulkModel> = Repository.forModel<
+    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
       TestBulkModel,
-      CouchDBRepository<TestBulkModel>
+      NanoRepository<TestBulkModel>
     >(TestBulkModel);
     const models = [1].map(
       (i) =>
@@ -97,9 +98,9 @@ describe("Bulk operations", () => {
   });
 
   it("Reads in Bulk", async () => {
-    const repo: CouchDBRepository<TestBulkModel> = Repository.forModel<
+    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
       TestBulkModel,
-      CouchDBRepository<TestBulkModel>
+      NanoRepository<TestBulkModel>
     >(TestBulkModel);
     const ids = created.map((c) => c.id) as number[];
     const read = await repo.readAll(ids);
@@ -111,9 +112,9 @@ describe("Bulk operations", () => {
   });
 
   it("Updates in Bulk", async () => {
-    const repo: CouchDBRepository<TestBulkModel> = Repository.forModel<
+    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
       TestBulkModel,
-      CouchDBRepository<TestBulkModel>
+      NanoRepository<TestBulkModel>
     >(TestBulkModel);
     const toUpdate = created.map((c, i) => {
       return new TestBulkModel({
@@ -130,9 +131,9 @@ describe("Bulk operations", () => {
   });
 
   it("Deletes in Bulk", async () => {
-    const repo: CouchDBRepository<TestBulkModel> = Repository.forModel<
+    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
       TestBulkModel,
-      CouchDBRepository<TestBulkModel>
+      NanoRepository<TestBulkModel>
     >(TestBulkModel);
     const ids = created.map((c) => c.id);
     const deleted = await repo.deleteAll(ids as number[]);

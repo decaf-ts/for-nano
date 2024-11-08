@@ -1,17 +1,27 @@
-import { InternalError } from "@decaf-ts/db-decorators";
+import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
 import "reflect-metadata";
 import {
   CouchDBAdapter,
   CouchDBKeys,
-  DatabaseSessionResponse,
-  DocumentInsertResponse,
-  MaybeDocument,
+  CreateIndexRequest,
+  generateIndexes,
+  MangoQuery,
+  MangoResponse,
 } from "@decaf-ts/for-couchdb";
 import * as Nano from "nano";
-import { DocumentBulkResponse, DocumentScope, ServerScope } from "nano";
+import {
+  DatabaseSessionResponse,
+  DocumentBulkResponse,
+  DocumentGetResponse,
+  DocumentInsertResponse,
+  DocumentScope,
+  MaybeDocument,
+  ServerScope,
+} from "nano";
 import { PersistenceKeys, User } from "@decaf-ts/core";
+import { Constructor, Model } from "@decaf-ts/decorator-validation";
 
-export class NanoAdapter extends CouchDBAdapter {
+export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
   constructor(scope: DocumentScope<any>, flavour: string) {
     super(scope, flavour);
   }
@@ -27,6 +37,89 @@ export class NanoAdapter extends CouchDBAdapter {
     } catch (e: any) {
       throw this.parseError(e);
     }
+  }
+
+  async create(
+    tableName: string,
+    id: string | number,
+    model: Record<string, any>
+  ): Promise<Record<string, any>> {
+    let response: DocumentInsertResponse;
+    try {
+      response = await this.native.insert(model);
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+
+    if (!response.ok)
+      throw new InternalError(
+        `Failed to insert doc id: ${id} in table ${tableName}`
+      );
+    return this.assignMetadata(model, response.rev);
+  }
+
+  async createAll(
+    tableName: string,
+    ids: string[] | number[],
+    models: Record<string, any>[]
+  ): Promise<Record<string, any>[]> {
+    let response: DocumentBulkResponse[];
+    try {
+      response = await this.native.bulk({ docs: models });
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+    if (!response.every((r) => !r.error)) {
+      const errors = response.reduce((accum: string[], el, i) => {
+        if (el.error)
+          accum.push(
+            `el ${i}: ${el.error}${el.reason ? ` - ${el.reason}` : ""}`
+          );
+        return accum;
+      }, []);
+      throw new InternalError(errors.join("\n"));
+    }
+
+    return this.assignMultipleMetadata(
+      models,
+      response.map((r) => r.rev as string)
+    );
+  }
+
+  protected async index<M extends Model>(
+    ...models: Constructor<M>[]
+  ): Promise<void> {
+    const indexes: CreateIndexRequest[] = generateIndexes(models);
+    for (const index of indexes) {
+      const res = await this.native.createIndex(index);
+      const { result, id, name } = res;
+      if (result === "existing")
+        throw new ConflictError(`Index for table ${name} with id ${id}`);
+    }
+  }
+
+  async raw<V>(rawInput: MangoQuery, process = true): Promise<V> {
+    try {
+      const response: MangoResponse<V> = await this.native.find(rawInput);
+      if (process) return response.docs as V;
+      return response as V;
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+  }
+
+  async read(
+    tableName: string,
+    id: string | number
+  ): Promise<Record<string, any>> {
+    const _id = this.generateId(tableName, id);
+    let record: DocumentGetResponse;
+    try {
+      record = await this.native.get(_id);
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+    return this.assignMetadata(record, record._rev);
   }
 
   async readAll(
@@ -50,6 +143,68 @@ export class NanoAdapter extends CouchDBAdapter {
       }
       throw new InternalError("Should be impossible");
     });
+  }
+
+  async update(
+    tableName: string,
+    id: string | number,
+    model: Record<string, any>
+  ): Promise<Record<string, any>> {
+    let response: DocumentInsertResponse;
+    try {
+      response = await this.native.insert(model);
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+
+    if (!response.ok)
+      throw new InternalError(
+        `Failed to update doc id: ${id} in table ${tableName}`
+      );
+    return this.assignMetadata(model, response.rev);
+  }
+
+  async updateAll(
+    tableName: string,
+    ids: string[] | number[],
+    models: Record<string, any>[]
+  ): Promise<Record<string, any>[]> {
+    let response: DocumentBulkResponse[];
+    try {
+      response = await this.native.bulk({ docs: models });
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+    if (!response.every((r) => !r.error)) {
+      const errors = response.reduce((accum: string[], el, i) => {
+        if (el.error)
+          accum.push(
+            `el ${i}: ${el.error}${el.reason ? ` - ${el.reason}` : ""}`
+          );
+        return accum;
+      }, []);
+      throw new InternalError(errors.join("\n"));
+    }
+
+    return this.assignMultipleMetadata(
+      models,
+      response.map((r) => r.rev as string)
+    );
+  }
+
+  async delete(
+    tableName: string,
+    id: string | number
+  ): Promise<Record<string, any>> {
+    const _id = this.generateId(tableName, id);
+    let record: DocumentGetResponse;
+    try {
+      record = await this.native.get(_id);
+      await this.native.destroy(_id, record._rev);
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+    return this.assignMetadata(record, record._rev);
   }
 
   async deleteAll(
