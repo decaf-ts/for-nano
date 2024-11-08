@@ -39,7 +39,7 @@ jest.setTimeout(50000);
 
 describe("Queries", () => {
   let con: ServerScope;
-  let adapter: CouchDBAdapter;
+  let adapter: NanoAdapter;
 
   beforeAll(async () => {
     con = NanoAdapter.connect(admin, admin_password, dbHost);
