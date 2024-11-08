@@ -1,6 +1,6 @@
 {
   "name": "@decaf-ts/for-nano",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "decaf-ts persistence adapter for CouchDB via nano",
   "type": "module",
   "exports": {
