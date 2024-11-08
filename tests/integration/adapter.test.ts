@@ -98,4 +98,6 @@ describe("Adapter Integration", () => {
     const metadata = (deleted as any)[PersistenceKeys.METADATA];
     expect(metadata).toBeDefined();
   });
+
+  it("bulk reads return metadata", async () => {});
 });

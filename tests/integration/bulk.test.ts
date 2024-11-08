@@ -1,4 +1,10 @@
-import { BaseModel, pk, Repository, uses } from "@decaf-ts/core";
+import {
+  BaseModel,
+  PersistenceKeys,
+  pk,
+  Repository,
+  uses,
+} from "@decaf-ts/core";
 import {
   minlength,
   Model,
@@ -8,7 +14,7 @@ import {
 } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
-import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { CouchDBKeys, wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
 
@@ -109,6 +115,7 @@ describe("Bulk operations", () => {
     expect(read.every((el) => el instanceof TestBulkModel)).toEqual(true);
     expect(read.every((el) => !el.hasErrors())).toEqual(true);
     expect(read.every((el, i) => el.equals(created[i]))).toEqual(true);
+    expect(read.every((el) => !!(el as any)[PersistenceKeys.METADATA]));
   });
 
   it("Updates in Bulk", async () => {

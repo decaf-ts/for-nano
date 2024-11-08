@@ -18,7 +18,7 @@ import {
   MaybeDocument,
   ServerScope,
 } from "nano";
-import { PersistenceKeys, User } from "@decaf-ts/core";
+import { User } from "@decaf-ts/core";
 import { Constructor, Model } from "@decaf-ts/decorator-validation";
 
 export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
@@ -124,12 +124,7 @@ export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
       if ((r as any).error) throw new InternalError((r as any).error);
       if ((r as any).doc) {
         const res = Object.assign({}, (r as any).doc);
-        Object.defineProperty(res, PersistenceKeys.METADATA, {
-          enumerable: false,
-          writable: false,
-          value: (r as any).doc[CouchDBKeys.REV],
-        });
-        return res;
+        return this.assignMetadata(res, (r as any).doc[CouchDBKeys.REV]);
       }
       throw new InternalError("Should be impossible");
     });
@@ -218,12 +213,7 @@ export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
       if ((r as any).error) throw new InternalError((r as any).error);
       if ((r as any).doc) {
         const res = Object.assign({}, (r as any).doc);
-        Object.defineProperty(res, PersistenceKeys.METADATA, {
-          enumerable: false,
-          writable: false,
-          value: (r as any).doc[CouchDBKeys.REV],
-        });
-        return res;
+        return this.assignMetadata(res, (r as any).doc[CouchDBKeys.REV]);
       }
       throw new InternalError("Should be impossible");
     });
