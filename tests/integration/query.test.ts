@@ -22,7 +22,7 @@ import {
   InternalError,
   readonly,
 } from "@decaf-ts/db-decorators";
-import { CouchDBAdapter, wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
 
