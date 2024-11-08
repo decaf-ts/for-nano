@@ -39,6 +39,18 @@ export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
     }
   }
 
+  protected async index<M extends Model>(
+    ...models: Constructor<M>[]
+  ): Promise<void> {
+    const indexes: CreateIndexRequest[] = generateIndexes(models);
+    for (const index of indexes) {
+      const res = await this.native.createIndex(index);
+      const { result, id, name } = res;
+      if (result === "existing")
+        throw new ConflictError(`Index for table ${name} with id ${id}`);
+    }
+  }
+
   async create(
     tableName: string,
     id: string | number,
@@ -84,28 +96,6 @@ export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
       models,
       response.map((r) => r.rev as string)
     );
-  }
-
-  protected async index<M extends Model>(
-    ...models: Constructor<M>[]
-  ): Promise<void> {
-    const indexes: CreateIndexRequest[] = generateIndexes(models);
-    for (const index of indexes) {
-      const res = await this.native.createIndex(index);
-      const { result, id, name } = res;
-      if (result === "existing")
-        throw new ConflictError(`Index for table ${name} with id ${id}`);
-    }
-  }
-
-  async raw<V>(rawInput: MangoQuery, process = true): Promise<V> {
-    try {
-      const response: MangoResponse<V> = await this.native.find(rawInput);
-      if (process) return response.docs as V;
-      return response as V;
-    } catch (e: any) {
-      throw this.parseError(e);
-    }
   }
 
   async read(
@@ -237,6 +227,17 @@ export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
       }
       throw new InternalError("Should be impossible");
     });
+  }
+
+  async raw<V>(rawInput: MangoQuery, process = true): Promise<V> {
+    try {
+      const response: MangoResponse<V> = await this.native.find(rawInput);
+      if (response.warning) console.warn(response.warning);
+      if (process) return response.docs as V;
+      return response as V;
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
   }
 
   static connect(
