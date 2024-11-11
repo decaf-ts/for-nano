@@ -22,14 +22,18 @@ import { User } from "@decaf-ts/core";
 import { Constructor, Model } from "@decaf-ts/decorator-validation";
 
 export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
+  private _user?: User;
+
   constructor(scope: DocumentScope<any>, flavour: string) {
     super(scope, flavour);
   }
 
-  async user(): Promise<User> {
+  protected async user(): Promise<User> {
+    if (this._user) return this._user;
+
     try {
-      const user: DatabaseSessionResponse = await this.native.server.session();
-      return new User({
+      const user: DatabaseSessionResponse = await this.native.session();
+      this._user = new User({
         id: user.userCtx.name,
         roles: user.userCtx.roles,
         affiliations: user.userCtx.affiliations,
@@ -37,6 +41,7 @@ export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
     } catch (e: any) {
       throw this.parseError(e);
     }
+    return this._user;
   }
 
   protected async index<M extends Model>(
