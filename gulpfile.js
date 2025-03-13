@@ -18,7 +18,7 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 
-import pkg from "./package.json" assert { type: "json" };
+import pkg from "./package.json" with { type: "json" };
 import fs from "fs";
 let { name, version } = pkg;
 
