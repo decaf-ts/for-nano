@@ -8,7 +8,7 @@ import {
   MangoQuery,
   MangoResponse,
 } from "@decaf-ts/for-couchdb";
-import * as Nano from "nano";
+import Nano from "nano";
 import {
   DatabaseSessionResponse,
   DocumentBulkResponse,

@@ -62,6 +62,7 @@ describe(`Complex Database`, function () {
   let userRepository: NanoRepository<TestUserModel>;
   let testDummyCountryModelRepository: NanoRepository<TestDummyCountry>;
   let testPhoneModelRepository: NanoRepository<TestPhoneModel>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let testDummyPhoneModelRepository: NanoRepository<TestDummyPhone>;
   let testAddressModelRepository: NanoRepository<TestAddressModel>;
   let testCountryModelRepository: NanoRepository<TestCountryModel>;
