@@ -347,7 +347,7 @@ describe(`Complex Database`, function () {
       });
     });
 
-    describe.skip("One to many relations", () => {
+    describe("One to many relations", () => {
       const user = {
         name: "testuser",
         email: "test@test.com",
@@ -594,7 +594,7 @@ describe(`Complex Database`, function () {
         expect(readCountry.equals(created.country)).toEqual(true);
       });
 
-      it.skip("In a one-to-many relation", async () => {
+      it("In a one-to-many relation", async () => {
         const country = await testCountryModelRepository.create(
           new TestCountryModel({
             name: "Italy",

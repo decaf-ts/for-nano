@@ -24,7 +24,7 @@ import { Constructor, Model } from "@decaf-ts/decorator-validation";
 export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
   private _user?: User;
 
-  constructor(scope: DocumentScope<any>, flavour: string) {
+  constructor(scope: DocumentScope<any>, flavour: string = "nano") {
     super(scope, flavour);
   }
 
