@@ -1,4 +1,8 @@
-import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
+import {
+  ConflictError,
+  InternalError,
+  RepositoryFlags,
+} from "@decaf-ts/db-decorators";
 import "reflect-metadata";
 import {
   CouchDBAdapter,
@@ -18,10 +22,14 @@ import {
   MaybeDocument,
   ServerScope,
 } from "nano";
-import { User } from "@decaf-ts/core";
+import { Context, User } from "@decaf-ts/core";
 import { Constructor, Model } from "@decaf-ts/decorator-validation";
 
-export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
+export class NanoAdapter extends CouchDBAdapter<
+  DocumentScope<any>,
+  Context<RepositoryFlags>,
+  RepositoryFlags
+> {
   private _user?: User;
 
   constructor(scope: DocumentScope<any>, flavour: string = "nano") {

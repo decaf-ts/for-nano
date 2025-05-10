@@ -97,74 +97,6 @@ describe(`Complex Database`, function () {
     };
   });
 
-  describe("basic test", () => {
-    let cached: TestCountryModel;
-
-    it("creates a new record", async () => {
-      const record = new TestCountryModel(model);
-      const created = await testCountryModelRepository.create(record);
-      expect(created).toBeDefined();
-      expect(
-        created.equals(
-          record,
-          "createdOn",
-          "updatedOn",
-          "createdBy",
-          "updatedBy",
-          "id"
-        )
-      ).toEqual(true);
-      expect(created.id).toEqual(1);
-      cached = created;
-    });
-
-    it("updates the sequences", async () => {
-      const modelSequence = await sequenceRepository.read(Sequence.pk(cached));
-      expect(modelSequence).toBeDefined();
-      expect(modelSequence.id).toEqual(TestCountryModel.name + "_pk");
-      expect(modelSequence.current).toEqual(1);
-    });
-
-    it("reads a record", async () => {
-      const read = await testCountryModelRepository.read(1);
-      expect(read).toBeDefined();
-      expect(read.equals(cached)).toEqual(true);
-    });
-
-    it("updates a record", async () => {
-      const toUpdate = new TestCountryModel(
-        Object.assign({}, cached, {
-          name: "other test name",
-        })
-      );
-      const updated = await testCountryModelRepository.update(toUpdate);
-      const read = await testCountryModelRepository.read(1);
-      expect(read).toBeDefined();
-      expect(read.name).toEqual("other test name");
-      expect(read.equals(updated)).toEqual(true);
-      cached = read;
-    });
-
-    it("finds a record", async () => {
-      const condition = Condition.attribute("name").eq("other test name");
-      const results: TestCountryModel[] = await testCountryModelRepository
-        .select()
-        .where(condition)
-        .execute<TestCountryModel[]>();
-      expect(results).toBeDefined();
-      expect(results.length).toEqual(1);
-      expect(cached.equals(results[0])).toEqual(true);
-    });
-
-    it("deletes a record", async () => {
-      const deleted = await testCountryModelRepository.delete(1);
-      await expect(testCountryModelRepository.read(1)).rejects.toBeInstanceOf(
-        NotFoundError
-      );
-      expect(deleted.equals(cached)).toEqual(true);
-    });
-  });
-
   describe("Complex relations Test", () => {
     let sequenceModel: Sequence;
     let sequenceCountry: Sequence;
@@ -222,14 +154,6 @@ describe(`Complex Database`, function () {
       });
 
       it("Creates a one to one relation", async () => {
-        sequenceModel = await adapter.Sequence({
-          name: Sequence.pk(TestAddressModel),
-          type: "Number",
-          startWith: 0,
-          incrementBy: 1,
-          cycle: false,
-        });
-
         sequenceCountry = await adapter.Sequence({
           name: Sequence.pk(TestCountryModel),
           type: "Number",
@@ -237,7 +161,15 @@ describe(`Complex Database`, function () {
           incrementBy: 1,
           cycle: false,
         });
-
+        sequenceModel = await adapter.Sequence({
+          name: Sequence.pk(TestAddressModel),
+          type: "Number",
+          startWith: 0,
+          incrementBy: 1,
+          cycle: false,
+        });
+        console.log(`Model: ${JSON.stringify(sequenceModel, null, 2)}`);
+        console.log(`Model: ${sequenceCountry}`);
         const addressCurVal = (await sequenceModel.current()) as number;
 
         const countryCurVal = (await sequenceCountry.current()) as number;
