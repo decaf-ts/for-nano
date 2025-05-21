@@ -1,4 +1,9 @@
-import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
+import {
+  ConflictError,
+  Context,
+  InternalError,
+  onCreate,
+} from "@decaf-ts/db-decorators";
 import "reflect-metadata";
 import {
   CouchDBAdapter,
@@ -10,7 +15,6 @@ import {
 } from "@decaf-ts/for-couchdb";
 import Nano from "nano";
 import {
-  DatabaseSessionResponse,
   DocumentBulkResponse,
   DocumentGetResponse,
   DocumentInsertResponse,
@@ -18,31 +22,79 @@ import {
   MaybeDocument,
   ServerScope,
 } from "nano";
-import { User } from "@decaf-ts/core";
-import { Constructor, Model } from "@decaf-ts/decorator-validation";
+import {
+  Constructor,
+  Decoration,
+  Model,
+  propMetadata,
+} from "@decaf-ts/decorator-validation";
+import { NanoFlags } from "./types";
+import {
+  PersistenceKeys,
+  RelationsMetadata,
+  Repo,
+  Repository,
+  UnsupportedError,
+} from "@decaf-ts/core";
 
-export class NanoAdapter extends CouchDBAdapter<DocumentScope<any>> {
-  private _user?: User;
+export async function createdByOnNanoCreateUpdate<
+  M extends Model,
+  R extends Repo<M, C, F>,
+  V extends RelationsMetadata,
+  F extends NanoFlags,
+  C extends Context<NanoFlags>,
+>(
+  this: R,
+  context: Context<F>,
+  data: V,
+  key: keyof M,
+  model: M
+): Promise<void> {
+  const user = context.get("user");
+  if (!user || !user.name)
+    throw new UnsupportedError(
+      "This adapter does not support user identification"
+    );
+  model[key] = user.name as M[typeof key];
+}
 
+const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
+const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
+
+Decoration.flavouredAs("nano")
+  .for(createdByKey)
+  .define(onCreate(createdByOnNanoCreateUpdate), propMetadata(createdByKey, {}))
+  .apply();
+
+Decoration.flavouredAs("nano")
+  .for(updatedByKey)
+  .define(onCreate(createdByOnNanoCreateUpdate), propMetadata(updatedByKey, {}))
+  .apply();
+
+export class NanoAdapter extends CouchDBAdapter<
+  DocumentScope<any>,
+  NanoFlags,
+  Context<NanoFlags>
+> {
   constructor(scope: DocumentScope<any>, flavour: string = "nano") {
     super(scope, flavour);
   }
-
-  protected async user(): Promise<User> {
-    if (this._user) return this._user;
-
-    try {
-      const user: DatabaseSessionResponse = await this.native.session();
-      this._user = new User({
-        id: user.userCtx.name,
-        roles: user.userCtx.roles,
-        affiliations: user.userCtx.affiliations,
-      });
-    } catch (e: any) {
-      throw this.parseError(e);
-    }
-    return this._user;
-  }
+  //
+  // protected async user(): Promise<User> {
+  //   if (this._user) return this._user;
+  //
+  //   try {
+  //     const user: DatabaseSessionResponse = await this.native.session();
+  //     this._user = new User({
+  //       id: user.userCtx.name,
+  //       roles: user.userCtx.roles,
+  //       affiliations: user.userCtx.affiliations,
+  //     });
+  //   } catch (e: any) {
+  //     throw this.parseError(e);
+  //   }
+  //   return this._user;
+  // }
 
   protected async index<M extends Model>(
     ...models: Constructor<M>[]
