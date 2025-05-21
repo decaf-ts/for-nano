@@ -61,16 +61,6 @@ export async function createdByOnNanoCreateUpdate<
 const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
 const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
 
-Decoration.flavouredAs("nano")
-  .for(createdByKey)
-  .define(onCreate(createdByOnNanoCreateUpdate), propMetadata(createdByKey, {}))
-  .apply();
-
-Decoration.flavouredAs("nano")
-  .for(updatedByKey)
-  .define(onCreate(createdByOnNanoCreateUpdate), propMetadata(updatedByKey, {}))
-  .apply();
-
 export class NanoAdapter extends CouchDBAdapter<
   DocumentScope<any>,
   NanoFlags,
@@ -78,23 +68,22 @@ export class NanoAdapter extends CouchDBAdapter<
 > {
   constructor(scope: DocumentScope<any>, flavour: string = "nano") {
     super(scope, flavour);
+    Decoration.flavouredAs("nano")
+      .for(createdByKey)
+      .define(
+        onCreate(createdByOnNanoCreateUpdate),
+        propMetadata(createdByKey, {})
+      )
+      .apply();
+
+    Decoration.flavouredAs("nano")
+      .for(updatedByKey)
+      .define(
+        onCreate(createdByOnNanoCreateUpdate),
+        propMetadata(updatedByKey, {})
+      )
+      .apply();
   }
-  //
-  // protected async user(): Promise<User> {
-  //   if (this._user) return this._user;
-  //
-  //   try {
-  //     const user: DatabaseSessionResponse = await this.native.session();
-  //     this._user = new User({
-  //       id: user.userCtx.name,
-  //       roles: user.userCtx.roles,
-  //       affiliations: user.userCtx.affiliations,
-  //     });
-  //   } catch (e: any) {
-  //     throw this.parseError(e);
-  //   }
-  //   return this._user;
-  // }
 
   protected async index<M extends Model>(
     ...models: Constructor<M>[]
