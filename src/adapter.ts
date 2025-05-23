@@ -32,21 +32,19 @@ import { NanoFlags } from "./types";
 import {
   PersistenceKeys,
   RelationsMetadata,
-  Repo,
   Repository,
   UnsupportedError,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
+import { NanoRepository } from "./NanoRepository";
 
 export async function createdByOnNanoCreateUpdate<
   M extends Model,
-  R extends Repo<M, F, C>,
+  R extends NanoRepository<M>,
   V extends RelationsMetadata,
-  F extends NanoFlags,
-  C extends Context<F>,
 >(
   this: R,
-  context: Context<F>,
+  context: Context<NanoFlags>,
   data: V,
   key: keyof M,
   model: M
