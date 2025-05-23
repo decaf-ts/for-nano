@@ -1,6 +1,13 @@
-export * from "./adapter";
+import { NanoAdapter } from "./adapter";
+
+// Forces override for Nano Decoration
+NanoAdapter.decoration();
+
+export * from "./constants";
 export * from "./NanoRepository";
 export * from "./types";
+// Left to the end on purpose
+export * from "./adapter";
 
 /**
  * @summary Module summary
