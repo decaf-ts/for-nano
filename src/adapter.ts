@@ -36,13 +36,14 @@ import {
   Repository,
   UnsupportedError,
 } from "@decaf-ts/core";
+import { NanoFlavour } from "./constants";
 
 export async function createdByOnNanoCreateUpdate<
   M extends Model,
-  R extends Repo<M, C, F>,
+  R extends Repo<M, F, C>,
   V extends RelationsMetadata,
   F extends NanoFlags,
-  C extends Context<NanoFlags>,
+  C extends Context<F>,
 >(
   this: R,
   context: Context<F>,
@@ -58,31 +59,13 @@ export async function createdByOnNanoCreateUpdate<
   model[key] = user.name as M[typeof key];
 }
 
-const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
-const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
-
 export class NanoAdapter extends CouchDBAdapter<
   DocumentScope<any>,
   NanoFlags,
   Context<NanoFlags>
 > {
-  constructor(scope: DocumentScope<any>, flavour: string = "nano") {
-    super(scope, flavour);
-    Decoration.flavouredAs("nano")
-      .for(createdByKey)
-      .define(
-        onCreate(createdByOnNanoCreateUpdate),
-        propMetadata(createdByKey, {})
-      )
-      .apply();
-
-    Decoration.flavouredAs("nano")
-      .for(updatedByKey)
-      .define(
-        onCreate(createdByOnNanoCreateUpdate),
-        propMetadata(updatedByKey, {})
-      )
-      .apply();
+  constructor(scope: DocumentScope<any>, alias?: string) {
+    super(scope, NanoFlavour, alias);
   }
 
   protected async index<M extends Model>(
@@ -265,12 +248,12 @@ export class NanoAdapter extends CouchDBAdapter<
     });
   }
 
-  async raw<V>(rawInput: MangoQuery, process = true): Promise<V> {
+  async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
     try {
-      const response: MangoResponse<V> = await this.native.find(rawInput);
+      const response: MangoResponse<R> = await this.native.find(rawInput);
       if (response.warning) console.warn(response.warning);
-      if (process) return response.docs as V;
-      return response as V;
+      if (docsOnly) return response.docs as R;
+      return response as R;
     } catch (e: any) {
       throw this.parseError(e);
     }
@@ -365,5 +348,25 @@ export class NanoAdapter extends CouchDBAdapter<
     } catch (e: any) {
       throw CouchDBAdapter.parseError(e);
     }
+  }
+
+  static decoration() {
+    const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
+    const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
+    Decoration.flavouredAs("nano")
+      .for(createdByKey)
+      .define(
+        onCreate(createdByOnNanoCreateUpdate),
+        propMetadata(createdByKey, {})
+      )
+      .apply();
+
+    Decoration.flavouredAs("nano")
+      .for(updatedByKey)
+      .define(
+        onCreate(createdByOnNanoCreateUpdate),
+        propMetadata(updatedByKey, {})
+      )
+      .apply();
   }
 }

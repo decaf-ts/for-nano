@@ -1,3 +1,20 @@
+import { NanoAdapter } from "../../src";
+import { ServerScope } from "nano";
+import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
+
+const admin = "couchdb.admin";
+const admin_password = "couchdb.admin";
+const user = "couchdb.admin";
+const user_password = "couchdb.admin";
+const dbName = "queries_db";
+const dbHost = "localhost:10010";
+
+const con: ServerScope = NanoAdapter.connect(admin, admin_password, dbHost);
+const adapter: NanoAdapter = new NanoAdapter(
+  wrapDocumentScope(con, dbName, user, user_password),
+  "nano"
+);
+
 import {
   BaseModel,
   Condition,
@@ -16,33 +33,20 @@ import {
   required,
   type,
 } from "@decaf-ts/decorator-validation";
-import { ServerScope } from "nano";
 import {
   ConflictError,
   InternalError,
   readonly,
 } from "@decaf-ts/db-decorators";
-import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
-import { NanoAdapter } from "../../src";
-import { NanoRepository } from "../../src";
 
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "queries_db";
-const dbHost = "localhost:10010";
+import { NanoRepository } from "../../src";
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(50000);
 
 describe("Queries", () => {
-  let con: ServerScope;
-  let adapter: NanoAdapter;
-
   beforeAll(async () => {
-    con = NanoAdapter.connect(admin, admin_password, dbHost);
     expect(con).toBeDefined();
     try {
       await NanoAdapter.createDatabase(con, dbName);
@@ -50,11 +54,6 @@ describe("Queries", () => {
     } catch (e: any) {
       if (!(e instanceof ConflictError)) throw e;
     }
-    con = NanoAdapter.connect(user, user_password, dbHost);
-    adapter = new NanoAdapter(
-      wrapDocumentScope(con, dbName, user, user_password),
-      "nano"
-    );
   });
 
   afterAll(async () => {
@@ -113,7 +112,7 @@ describe("Queries", () => {
       TestUser,
       NanoRepository<TestUser>
     >(TestUser);
-    const selected = await repo.select().execute<TestUser[]>();
+    const selected = await repo.select().execute();
     expect(
       created.every((c) => c.equals(selected.find((s: any) => (s.id = c.id))))
     );
@@ -124,9 +123,7 @@ describe("Queries", () => {
       TestUser,
       NanoRepository<TestUser>
     >(TestUser);
-    const selected = await repo
-      .select(["age", "sex"])
-      .execute<{ age: number; sex: "M" | "F" }[]>();
+    const selected = await repo.select(["age", "sex"]).execute();
     expect(selected).toEqual(
       expect.arrayContaining(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -145,8 +142,8 @@ describe("Queries", () => {
       TestUser,
       NanoRepository<TestUser>
     >(TestUser);
-    const condition = Condition.attribute("age").eq(20);
-    const selected = await repo.select().where(condition).execute<TestUser[]>();
+    const condition = Condition.attribute<TestUser>("age").eq(20);
+    const selected = await repo.select().where(condition).execute();
     expect(selected.length).toEqual(created.filter((c) => c.age === 20).length);
   });
 
@@ -155,11 +152,11 @@ describe("Queries", () => {
       TestUser,
       NanoRepository<TestUser>
     >(TestUser);
-    const condition = Condition.attribute("age").eq(20);
+    const condition = Condition.attribute<TestUser>("age").eq(20);
     const selected = await repo
       .select(["age", "sex"])
       .where(condition)
-      .execute<TestUser[]>();
+      .execute();
     expect(selected.length).toEqual(created.filter((c) => c.age === 20).length);
     expect(selected).toEqual(
       expect.arrayContaining(
@@ -179,10 +176,10 @@ describe("Queries", () => {
       TestUser,
       NanoRepository<TestUser>
     >(TestUser);
-    const condition = Condition.attribute("age")
+    const condition = Condition.attribute<TestUser>("age")
       .eq(20)
-      .and(Condition.attribute("sex").eq("M"));
-    const selected = await repo.select().where(condition).execute<TestUser[]>();
+      .and(Condition.attribute<TestUser>("sex").eq("M"));
+    const selected = await repo.select().where(condition).execute();
     expect(selected.length).toEqual(
       created.filter((c) => c.age === 20 && c.sex === "M").length
     );
@@ -192,10 +189,10 @@ describe("Queries", () => {
     const repo = Repository.forModel<TestUser, NanoRepository<TestUser>>(
       TestUser
     );
-    const condition = Condition.attribute("age")
+    const condition = Condition.attribute<TestUser>("age")
       .eq(20)
-      .or(Condition.attribute("age").eq(19));
-    const selected = await repo.select().where(condition).execute<TestUser[]>();
+      .or(Condition.attribute<TestUser>("age").eq(19));
+    const selected = await repo.select().where(condition).execute();
     expect(selected.length).toEqual(
       created.filter((c) => c.age === 20 || c.age === 19).length
     );
@@ -207,7 +204,7 @@ describe("Queries", () => {
       NanoRepository<TestUser>
     >(TestUser);
     await expect(() =>
-      repo.select().orderBy(["name", OrderDirection.DSC]).execute<TestUser[]>()
+      repo.select().orderBy(["name", OrderDirection.DSC]).execute()
     ).rejects.toThrow(InternalError);
   });
 
@@ -220,7 +217,7 @@ describe("Queries", () => {
     const sorted = await repo
       .select()
       .orderBy(["age", OrderDirection.DSC])
-      .execute<TestUser[]>();
+      .execute();
     expect(sorted).toBeDefined();
     expect(sorted.length).toEqual(created.length);
 
