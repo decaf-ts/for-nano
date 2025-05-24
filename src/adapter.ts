@@ -3,6 +3,7 @@ import {
   Context,
   InternalError,
   onCreate,
+  OperationKeys,
 } from "@decaf-ts/db-decorators";
 import "reflect-metadata";
 import {
@@ -49,12 +50,15 @@ export async function createdByOnNanoCreateUpdate<
   key: keyof M,
   model: M
 ): Promise<void> {
-  const user = context.get("user");
-  if (!user || !user.name)
+  try {
+    const user = context.get("user");
+    model[key] = user.name as M[typeof key];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e: unknown) {
     throw new UnsupportedError(
-      "This adapter does not support user identification"
+      "No User found in context. Please provide a user in the context"
     );
-  model[key] = user.name as M[typeof key];
+  }
 }
 
 export class NanoAdapter extends CouchDBAdapter<
@@ -66,7 +70,19 @@ export class NanoAdapter extends CouchDBAdapter<
     super(scope, NanoFlavour, alias);
   }
 
-  protected async index<M extends Model>(
+  protected override flags<M extends Model>(
+    operation: OperationKeys,
+    model: Constructor<M>,
+    flags: Partial<NanoFlags>
+  ): NanoFlags {
+    return Object.assign(super.flags(operation, model, flags), {
+      user: {
+        name: this.native.config.url.split("@")[0].split(":")[0],
+      },
+    }) as NanoFlags;
+  }
+
+  protected override async index<M extends Model>(
     ...models: Constructor<M>[]
   ): Promise<void> {
     const indexes: CreateIndexRequest[] = generateIndexes(models);
@@ -78,7 +94,7 @@ export class NanoAdapter extends CouchDBAdapter<
     }
   }
 
-  async create(
+  override async create(
     tableName: string,
     id: string | number,
     model: Record<string, any>
@@ -97,7 +113,7 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(model, response.rev);
   }
 
-  async createAll(
+  override async createAll(
     tableName: string,
     ids: string[] | number[],
     models: Record<string, any>[]
@@ -125,7 +141,7 @@ export class NanoAdapter extends CouchDBAdapter<
     );
   }
 
-  async read(
+  override async read(
     tableName: string,
     id: string | number
   ): Promise<Record<string, any>> {
@@ -139,7 +155,7 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(record, record._rev);
   }
 
-  async readAll(
+  override async readAll(
     tableName: string,
     ids: (string | number | bigint)[]
   ): Promise<Record<string, any>[]> {
@@ -157,7 +173,7 @@ export class NanoAdapter extends CouchDBAdapter<
     });
   }
 
-  async update(
+  override async update(
     tableName: string,
     id: string | number,
     model: Record<string, any>
@@ -176,7 +192,7 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(model, response.rev);
   }
 
-  async updateAll(
+  override async updateAll(
     tableName: string,
     ids: string[] | number[],
     models: Record<string, any>[]
@@ -204,7 +220,7 @@ export class NanoAdapter extends CouchDBAdapter<
     );
   }
 
-  async delete(
+  override async delete(
     tableName: string,
     id: string | number
   ): Promise<Record<string, any>> {
@@ -219,7 +235,7 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(record, record._rev);
   }
 
-  async deleteAll(
+  override async deleteAll(
     tableName: string,
     ids: (string | number | bigint)[]
   ): Promise<Record<string, any>[]> {
@@ -246,7 +262,7 @@ export class NanoAdapter extends CouchDBAdapter<
     });
   }
 
-  async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
+  override async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
     try {
       const response: MangoResponse<R> = await this.native.find(rawInput);
       if (response.warning) console.warn(response.warning);
