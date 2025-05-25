@@ -1,8 +1,13 @@
 import { ServerScope } from "nano";
-import { PersistenceKeys, Repository } from "@decaf-ts/core";
+import { Observer, PersistenceKeys, Repository } from "@decaf-ts/core";
 import { Model } from "@decaf-ts/decorator-validation";
 import { TestModel } from "../TestModel";
-import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
+import {
+  ConflictError,
+  id,
+  NotFoundError,
+  OperationKeys,
+} from "@decaf-ts/db-decorators";
 import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
@@ -40,6 +45,25 @@ describe("Adapter Integration", () => {
     repo = new Repository(adapter, TestModel);
   });
 
+  let observer: Observer;
+  let mock: any;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+    jest.resetAllMocks();
+    mock = jest.fn();
+    observer = new (class implements Observer {
+      refresh(...args: any[]): Promise<void> {
+        return mock(...args);
+      }
+    })();
+    repo.observe(observer);
+  });
+
+  afterEach(() => {
+    repo.unObserve(observer);
+  });
+
   afterAll(async () => {
     await NanoAdapter.deleteDatabase(con, dbName);
   });
@@ -58,6 +82,12 @@ describe("Adapter Integration", () => {
     expect(created).toBeDefined();
     const metadata = (created as any)[PersistenceKeys.METADATA];
     expect(metadata).toBeDefined();
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    expect(mock).toHaveBeenCalledWith(
+      Repository.table(TestModel),
+      OperationKeys.CREATE,
+      [model.id]
+    );
   });
 
   it("reads", async () => {

@@ -38,6 +38,7 @@ import {
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
+import { NanoDispatch } from "./NanoDispatch";
 
 export async function createdByOnNanoCreateUpdate<
   M extends Model,
@@ -80,6 +81,10 @@ export class NanoAdapter extends CouchDBAdapter<
         name: this.native.config.url.split("@")[0].split(":")[0],
       },
     }) as NanoFlags;
+  }
+
+  protected override Dispatch(): NanoDispatch {
+    return new NanoDispatch();
   }
 
   protected override async index<M extends Model>(
