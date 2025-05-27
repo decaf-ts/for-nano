@@ -4,7 +4,6 @@ import { Model } from "@decaf-ts/decorator-validation";
 import { TestModel } from "../TestModel";
 import {
   ConflictError,
-  id,
   NotFoundError,
   OperationKeys,
 } from "@decaf-ts/db-decorators";
