@@ -50,7 +50,7 @@ import { NanoDispatch } from "./NanoDispatch";
  * @param {R} this - The repository instance
  * @param {Context<NanoFlags>} context - The operation context containing user information
  * @param {V} data - The relation metadata
- * @param {keyof M} key - The property key to set with the username
+ * @param key - The property key to set with the username
  * @param {M} model - The model instance being created or updated
  * @return {Promise<void>} A promise that resolves when the operation is complete
  * @function createdByOnNanoCreateUpdate
@@ -104,10 +104,10 @@ export async function createdByOnNanoCreateUpdate<
  * // Connect to a Nano database
  * const server = NanoAdapter.connect('admin', 'password', 'localhost:5984');
  * const db = server.db.use('my_database');
- * 
+ *
  * // Create an adapter instance
  * const adapter = new NanoAdapter(db);
- * 
+ *
  * // Use the adapter for database operations
  * const document = await adapter.read('users', '123');
  * ```
@@ -187,7 +187,7 @@ export class NanoAdapter extends CouchDBAdapter<
    * @description Creates database indexes for models
    * @summary Generates and creates indexes in the Nano database based on the provided models
    * @template M - Type extending Model
-   * @param {...Constructor<M>[]} models - Model constructors to create indexes for
+   * @param models - Model constructors to create indexes for
    * @return {Promise<void>} A promise that resolves when all indexes are created
    * @mermaid
    * sequenceDiagram
@@ -265,8 +265,8 @@ export class NanoAdapter extends CouchDBAdapter<
    * @summary Inserts multiple documents into the Nano database in a single bulk operation
    * @param {string} tableName - The name of the table/collection
    * @param {string[] | number[]} ids - Array of document identifiers
-   * @param {Record<string, any>[]} models - Array of document data to insert
-   * @return {Promise<Record<string, any>[]>} A promise that resolves to an array of created documents with metadata
+   * @param models - Array of document data to insert
+   * @return A promise that resolves to an array of created documents with metadata
    * @mermaid
    * sequenceDiagram
    *   participant A as NanoAdapter
@@ -354,8 +354,8 @@ export class NanoAdapter extends CouchDBAdapter<
    * @description Retrieves multiple documents from the database
    * @summary Fetches multiple documents from the Nano database by their IDs in a single operation
    * @param {string} tableName - The name of the table/collection
-   * @param {(string | number | bigint)[]} ids - Array of document identifiers
-   * @return {Promise<Record<string, any>[]>} A promise that resolves to an array of retrieved documents with metadata
+   * @param {Array<string | number | bigint>} ids - Array of document identifiers
+   * @return A promise that resolves to an array of retrieved documents with metadata
    * @mermaid
    * sequenceDiagram
    *   participant A as NanoAdapter

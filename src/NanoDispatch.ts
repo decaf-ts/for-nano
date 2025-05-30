@@ -21,7 +21,7 @@ import { CouchDBKeys } from "@decaf-ts/for-couchdb";
  * const db = server.db.use('my_database');
  * const adapter = new NanoAdapter(db);
  * const dispatch = new NanoDispatch();
- * 
+ *
  * // The dispatcher will automatically subscribe to changes
  * // and notify observers when documents change
  * ```
@@ -53,7 +53,7 @@ export class NanoDispatch extends Dispatch<DocumentScope<any>> {
    * @summary Handles the response from the Nano changes feed, processes the changes,
    * and notifies observers about document changes
    * @param {RequestError | null} error - Error object if the request failed
-   * @param {(DatabaseChangesResponse | DatabaseChangesResultItem)[] | string} response - The changes response from Nano
+   * @param response - The changes response from Nano
    * @param {any} [headers] - Response headers (unused)
    * @return {Promise<void>} A promise that resolves when all changes have been processed
    * @mermaid
@@ -213,7 +213,7 @@ export class NanoDispatch extends Dispatch<DocumentScope<any>> {
    */
   protected override async initialize(): Promise<void> {
     const log = this.log.for(this.initialize);
-    const subLog = log.for(subscribeToCouch)
+    const subLog = log.for(subscribeToCouch);
     async function subscribeToCouch(this: NanoDispatch): Promise<void> {
       if (!this.adapter || !this.native)
         throw new InternalError(`No adapter/native observed for dispatch`);
