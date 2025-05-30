@@ -10,15 +10,15 @@ export * from "./types";
 export * from "./adapter";
 
 /**
- * @summary Module summary
- * @description Module description
+ * @description A TypeScript module for interacting with Nano databases
+ * @summary This module provides a set of utilities, classes, and types for working with Nano databases. It includes repository patterns, adapters, and type definitions to simplify database operations.
  * @module for-nano
  */
 
 /**
- * @summary stores the current package version
- * @description this is how you should document a constant
+ * @description Package version identifier
+ * @summary Stores the current package version string for the for-nano module
  * @const VERSION
- * @memberOf module:ts-workspace
+ * @memberOf module:for-nano
  */
 export const VERSION = "##VERSION##";

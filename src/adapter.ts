@@ -40,6 +40,32 @@ import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
 import { NanoDispatch } from "./NanoDispatch";
 
+/**
+ * @description Sets the creator or updater field in a model based on the user in the context
+ * @summary Callback function used in decorators to automatically set the created_by or updated_by fields
+ * with the username from the context when a document is created or updated
+ * @template M - Type extending Model
+ * @template R - Type extending NanoRepository<M>
+ * @template V - Type extending RelationsMetadata
+ * @param {R} this - The repository instance
+ * @param {Context<NanoFlags>} context - The operation context containing user information
+ * @param {V} data - The relation metadata
+ * @param {keyof M} key - The property key to set with the username
+ * @param {M} model - The model instance being created or updated
+ * @return {Promise<void>} A promise that resolves when the operation is complete
+ * @function createdByOnNanoCreateUpdate
+ * @memberOf module:for-nano
+ * @mermaid
+ * sequenceDiagram
+ *   participant F as createdByOnNanoCreateUpdate
+ *   participant C as Context
+ *   participant M as Model
+ *   F->>C: get("user")
+ *   C-->>F: user object
+ *   F->>M: set key to user.name
+ *   Note over F: If no user in context
+ *   F-->>F: throw UnsupportedError
+ */
 export async function createdByOnNanoCreateUpdate<
   M extends Model,
   R extends NanoRepository<M>,
@@ -62,6 +88,62 @@ export async function createdByOnNanoCreateUpdate<
   }
 }
 
+/**
+ * @description Adapter for interacting with Nano databases
+ * @summary Provides a standardized interface for performing CRUD operations on Nano databases,
+ * extending the CouchDB adapter with Nano-specific functionality. This adapter handles document
+ * creation, reading, updating, and deletion, as well as bulk operations and index management.
+ * @template DocumentScope - The Nano document scope type
+ * @template NanoFlags - Configuration flags for Nano operations
+ * @template Context - Context type for operations
+ * @param {DocumentScope<any>} scope - The Nano document scope to use for database operations
+ * @param {string} [alias] - Optional alias for the adapter
+ * @class NanoAdapter
+ * @example
+ * ```typescript
+ * // Connect to a Nano database
+ * const server = NanoAdapter.connect('admin', 'password', 'localhost:5984');
+ * const db = server.db.use('my_database');
+ * 
+ * // Create an adapter instance
+ * const adapter = new NanoAdapter(db);
+ * 
+ * // Use the adapter for database operations
+ * const document = await adapter.read('users', '123');
+ * ```
+ * @mermaid
+ * classDiagram
+ *   class CouchDBAdapter {
+ *     +flags()
+ *     +Dispatch()
+ *     +index()
+ *     +create()
+ *     +read()
+ *     +update()
+ *     +delete()
+ *   }
+ *   class NanoAdapter {
+ *     +flags()
+ *     +Dispatch()
+ *     +index()
+ *     +create()
+ *     +createAll()
+ *     +read()
+ *     +readAll()
+ *     +update()
+ *     +updateAll()
+ *     +delete()
+ *     +deleteAll()
+ *     +raw()
+ *     +static connect()
+ *     +static createDatabase()
+ *     +static deleteDatabase()
+ *     +static createUser()
+ *     +static deleteUser()
+ *     +static decoration()
+ *   }
+ *   CouchDBAdapter <|-- NanoAdapter
+ */
 export class NanoAdapter extends CouchDBAdapter<
   DocumentScope<any>,
   NanoFlags,
@@ -71,6 +153,15 @@ export class NanoAdapter extends CouchDBAdapter<
     super(scope, NanoFlavour, alias);
   }
 
+  /**
+   * @description Generates flags for database operations
+   * @summary Creates a set of flags for a specific operation, including user information
+   * @template M - Type extending Model
+   * @param {OperationKeys} operation - The operation being performed (create, read, update, delete)
+   * @param {Constructor<M>} model - The model constructor
+   * @param {Partial<NanoFlags>} flags - Partial flags to be merged
+   * @return {NanoFlags} Complete flags for the operation
+   */
   protected override flags<M extends Model>(
     operation: OperationKeys,
     model: Constructor<M>,
@@ -83,10 +174,37 @@ export class NanoAdapter extends CouchDBAdapter<
     }) as NanoFlags;
   }
 
+  /**
+   * @description Creates a new NanoDispatch instance
+   * @summary Returns a dispatcher for handling Nano-specific operations
+   * @return {NanoDispatch} A new NanoDispatch instance
+   */
   protected override Dispatch(): NanoDispatch {
     return new NanoDispatch();
   }
 
+  /**
+   * @description Creates database indexes for models
+   * @summary Generates and creates indexes in the Nano database based on the provided models
+   * @template M - Type extending Model
+   * @param {...Constructor<M>[]} models - Model constructors to create indexes for
+   * @return {Promise<void>} A promise that resolves when all indexes are created
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant G as generateIndexes
+   *   participant DB as Nano Database
+   *   A->>G: generateIndexes(models)
+   *   G-->>A: indexes
+   *   loop For each index
+   *     A->>DB: createIndex(index)
+   *     DB-->>A: response
+   *     Note over A: Check if index already exists
+   *     alt Index exists
+   *       A-->>A: throw ConflictError
+   *     end
+   *   end
+   */
   protected override async index<M extends Model>(
     ...models: Constructor<M>[]
   ): Promise<void> {
@@ -99,6 +217,30 @@ export class NanoAdapter extends CouchDBAdapter<
     }
   }
 
+  /**
+   * @description Creates a new document in the database
+   * @summary Inserts a new document into the Nano database with the provided data
+   * @param {string} tableName - The name of the table/collection
+   * @param {string | number} id - The document identifier
+   * @param {Record<string, any>} model - The document data to insert
+   * @return {Promise<Record<string, any>>} A promise that resolves to the created document with metadata
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Database
+   *   A->>DB: insert(model)
+   *   alt Success
+   *     DB-->>A: response with ok=true
+   *     A->>A: assignMetadata(model, response.rev)
+   *     A-->>A: return document with metadata
+   *   else Error
+   *     DB-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   else Not OK
+   *     DB-->>A: response with ok=false
+   *     A-->>A: throw InternalError
+   *   end
+   */
   override async create(
     tableName: string,
     id: string | number,
@@ -118,6 +260,33 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(model, response.rev);
   }
 
+  /**
+   * @description Creates multiple documents in the database
+   * @summary Inserts multiple documents into the Nano database in a single bulk operation
+   * @param {string} tableName - The name of the table/collection
+   * @param {string[] | number[]} ids - Array of document identifiers
+   * @param {Record<string, any>[]} models - Array of document data to insert
+   * @return {Promise<Record<string, any>[]>} A promise that resolves to an array of created documents with metadata
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Database
+   *   A->>DB: bulk({docs: models})
+   *   alt Success
+   *     DB-->>A: response array
+   *     A->>A: Check if all responses have no errors
+   *     alt All OK
+   *       A->>A: assignMultipleMetadata(models, revs)
+   *       A-->>A: return documents with metadata
+   *     else Some errors
+   *       A->>A: Collect error messages
+   *       A-->>A: throw InternalError with collected messages
+   *     end
+   *   else Error
+   *     DB-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   end
+   */
   override async createAll(
     tableName: string,
     ids: string[] | number[],
@@ -146,6 +315,27 @@ export class NanoAdapter extends CouchDBAdapter<
     );
   }
 
+  /**
+   * @description Retrieves a document from the database
+   * @summary Fetches a single document from the Nano database by its ID
+   * @param {string} tableName - The name of the table/collection
+   * @param {string | number} id - The document identifier
+   * @return {Promise<Record<string, any>>} A promise that resolves to the retrieved document with metadata
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Database
+   *   A->>A: generateId(tableName, id)
+   *   A->>DB: get(_id)
+   *   alt Success
+   *     DB-->>A: record
+   *     A->>A: assignMetadata(record, record._rev)
+   *     A-->>A: return document with metadata
+   *   else Error
+   *     DB-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   end
+   */
   override async read(
     tableName: string,
     id: string | number
@@ -160,6 +350,31 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(record, record._rev);
   }
 
+  /**
+   * @description Retrieves multiple documents from the database
+   * @summary Fetches multiple documents from the Nano database by their IDs in a single operation
+   * @param {string} tableName - The name of the table/collection
+   * @param {(string | number | bigint)[]} ids - Array of document identifiers
+   * @return {Promise<Record<string, any>[]>} A promise that resolves to an array of retrieved documents with metadata
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Database
+   *   A->>A: Map ids to generateId(tableName, id)
+   *   A->>DB: fetch({keys: mappedIds}, {})
+   *   DB-->>A: results
+   *   A->>A: Process each result row
+   *   loop For each row
+   *     alt Row has error
+   *       A-->>A: throw InternalError
+   *     else Row has document
+   *       A->>A: assignMetadata(doc, doc._rev)
+   *     else No document
+   *       A-->>A: throw InternalError
+   *     end
+   *   end
+   *   A-->>A: return documents with metadata
+   */
   override async readAll(
     tableName: string,
     ids: (string | number | bigint)[]
@@ -178,6 +393,30 @@ export class NanoAdapter extends CouchDBAdapter<
     });
   }
 
+  /**
+   * @description Updates a document in the database
+   * @summary Updates an existing document in the Nano database with the provided data
+   * @param {string} tableName - The name of the table/collection
+   * @param {string | number} id - The document identifier
+   * @param {Record<string, any>} model - The updated document data
+   * @return {Promise<Record<string, any>>} A promise that resolves to the updated document with metadata
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Database
+   *   A->>DB: insert(model)
+   *   alt Success
+   *     DB-->>A: response with ok=true
+   *     A->>A: assignMetadata(model, response.rev)
+   *     A-->>A: return document with metadata
+   *   else Error
+   *     DB-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   else Not OK
+   *     DB-->>A: response with ok=false
+   *     A-->>A: throw InternalError
+   *   end
+   */
   override async update(
     tableName: string,
     id: string | number,
@@ -287,6 +526,27 @@ export class NanoAdapter extends CouchDBAdapter<
     return Nano(`${protocol}://${user}:${pass}@${host}`);
   }
 
+  /**
+   * @description Creates a new database on the Nano server
+   * @summary Creates a new database with the specified name on the connected Nano server
+   * @param {ServerScope} con - The Nano server connection
+   * @param {string} name - The name of the database to create
+   * @return {Promise<void>} A promise that resolves when the database is created
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Server
+   *   A->>DB: db.create(name)
+   *   alt Success
+   *     DB-->>A: result with ok=true
+   *   else Error
+   *     DB-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   else Not OK
+   *     DB-->>A: result with ok=false
+   *     A-->>A: throw parseError(error, reason)
+   *   end
+   */
   static async createDatabase(con: ServerScope, name: string) {
     let result: any;
     try {
@@ -298,6 +558,27 @@ export class NanoAdapter extends CouchDBAdapter<
     if (!ok) throw CouchDBAdapter.parseError(error as string, reason);
   }
 
+  /**
+   * @description Deletes a database from the Nano server
+   * @summary Removes an existing database with the specified name from the connected Nano server
+   * @param {ServerScope} con - The Nano server connection
+   * @param {string} name - The name of the database to delete
+   * @return {Promise<void>} A promise that resolves when the database is deleted
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant DB as Nano Server
+   *   A->>DB: db.destroy(name)
+   *   alt Success
+   *     DB-->>A: result with ok=true
+   *   else Error
+   *     DB-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   else Not OK
+   *     DB-->>A: result with ok=false
+   *     A-->>A: throw InternalError
+   *   end
+   */
   static async deleteDatabase(con: ServerScope, name: string) {
     let result;
     try {
@@ -310,6 +591,39 @@ export class NanoAdapter extends CouchDBAdapter<
       throw new InternalError(`Failed to delete database with name ${name}`);
   }
 
+  /**
+   * @description Creates a new user and grants access to a database
+   * @summary Creates a new user in the Nano server and configures security to grant the user access to a specific database
+   * @param {ServerScope} con - The Nano server connection
+   * @param {string} dbName - The name of the database to grant access to
+   * @param {string} user - The username to create
+   * @param {string} pass - The password for the new user
+   * @param {string[]} [roles=["reader", "writer"]] - The roles to assign to the user
+   * @return {Promise<void>} A promise that resolves when the user is created and granted access
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant U as _users Database
+   *   participant S as Security API
+   *   A->>A: Create user object
+   *   A->>U: insert(user)
+   *   alt Success
+   *     U-->>A: response with ok=true
+   *     A->>S: PUT _security with user permissions
+   *     alt Security Success
+   *       S-->>A: security response with ok=true
+   *     else Security Failure
+   *       S-->>A: security response with ok=false
+   *       A-->>A: throw InternalError
+   *     end
+   *   else Error
+   *     U-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   else Not OK
+   *     U-->>A: response with ok=false
+   *     A-->>A: throw InternalError
+   *   end
+   */
   static async createUser(
     con: ServerScope,
     dbName: string,
@@ -358,6 +672,28 @@ export class NanoAdapter extends CouchDBAdapter<
     }
   }
 
+  /**
+   * @description Deletes a user from the Nano server
+   * @summary Removes an existing user from the Nano server
+   * @param {ServerScope} con - The Nano server connection
+   * @param {string} dbName - The name of the database (used for logging purposes)
+   * @param {string} user - The username to delete
+   * @return {Promise<void>} A promise that resolves when the user is deleted
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant U as _users Database
+   *   A->>A: Generate user ID
+   *   A->>U: get(id)
+   *   U-->>A: user document
+   *   A->>U: destroy(id, user._rev)
+   *   alt Success
+   *     U-->>A: success response
+   *   else Error
+   *     U-->>A: error
+   *     A-->>A: throw parseError(e)
+   *   end
+   */
   static async deleteUser(con: ServerScope, dbName: string, user: string) {
     const users = con.db.use("_users");
     const id = "org.couchdb.user:" + user;
@@ -369,6 +705,29 @@ export class NanoAdapter extends CouchDBAdapter<
     }
   }
 
+  /**
+   * @description Sets up decorations for Nano-specific model properties
+   * @summary Configures decorators for created_by and updated_by fields in models to be automatically
+   * populated with the user from the context when documents are created or updated
+   * @return {void}
+   * @mermaid
+   * sequenceDiagram
+   *   participant A as NanoAdapter
+   *   participant D as Decoration
+   *   participant R as Repository
+   *   A->>R: key(PersistenceKeys.CREATED_BY)
+   *   R-->>A: createdByKey
+   *   A->>D: flavouredAs("nano")
+   *   A->>D: for(createdByKey)
+   *   A->>D: define(onCreate(createdByOnNanoCreateUpdate), propMetadata)
+   *   A->>D: apply()
+   *   A->>R: key(PersistenceKeys.UPDATED_BY)
+   *   R-->>A: updatedByKey
+   *   A->>D: flavouredAs("nano")
+   *   A->>D: for(updatedByKey)
+   *   A->>D: define(onCreate(createdByOnNanoCreateUpdate), propMetadata)
+   *   A->>D: apply()
+   */
   static decoration() {
     const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
     const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
