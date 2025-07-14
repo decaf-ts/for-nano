@@ -29,7 +29,10 @@ jobs:
 
       # Install dependencies only
       - run: npm ci
-
+      - name: Start database for testing
+        run: |
+          npm run docker:build
+          docker compose -f docker/docker-compose.yml up -d
       - name: Cache Build
         id: cache-build
         uses: actions/cache@v4

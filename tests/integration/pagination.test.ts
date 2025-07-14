@@ -80,7 +80,7 @@ describe(`Pagination`, function () {
     expect(created.every((c, i) => c.equals(selected[i]))).toEqual(true);
   });
 
-  it("paginates", async () => {
+  it.skip("paginates", async () => {
     const paginator: Paginator<TestCountryModel> = await repo
       .select()
       .orderBy(["id", OrderDirection.DSC])

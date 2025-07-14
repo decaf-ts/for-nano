@@ -43,6 +43,10 @@ jobs:
 
       # Install dependencies only if cache missed
       - run: npm ci
+      - name: Start database for testing
+        run: |
+          npm run docker:build
+          docker compose -f docker/docker-compose.yml up -d
       - run: npm run build:prod  # Replace with your build command  
       - run: npm run coverage
       - run: npm run docs
