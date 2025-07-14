@@ -35,10 +35,11 @@ jobs:
 
       # Install dependencies only if cache missed
       - run: npm ci
+      - name: Login to docker
+        run: echo ${{ secrets.GH_PAT }} | docker login ghcr.io -u USERNAME --password-stdin
       - name: Start database for testing
         run: |
-          npm run docker:build
-          docker compose -f docker/docker-compose.yml up -d
+          docker compose -f ./node_modules/@decaf-ts/for-couchdb/docker/docker-compose.yml up -d
 
       - name: Cache Build
         id: cache-build
