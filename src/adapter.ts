@@ -160,14 +160,14 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {OperationKeys} operation - The operation being performed (create, read, update, delete)
    * @param {Constructor<M>} model - The model constructor
    * @param {Partial<NanoFlags>} flags - Partial flags to be merged
-   * @return {NanoFlags} Complete flags for the operation
+   * @return {Promise<NanoFlags>} Complete flags for the operation
    */
-  protected override flags<M extends Model>(
+  protected override async flags<M extends Model>(
     operation: OperationKeys,
     model: Constructor<M>,
     flags: Partial<NanoFlags>
-  ): NanoFlags {
-    return Object.assign(super.flags(operation, model, flags), {
+  ): Promise<NanoFlags> {
+    return Object.assign(await super.flags(operation, model, flags), {
       user: {
         name: this.native.config.url.split("@")[0].split(":")[0],
       },
