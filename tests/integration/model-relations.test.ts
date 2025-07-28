@@ -217,7 +217,7 @@ describe(`Complex Database`, function () {
         const deleted = await noPopulateOnceModelRepository.delete(created.id);
         expect(deleted.country).toEqual(countryCurVal + 2);
 
-        const c = testDummyCountryModelRepository.read(countryCurVal + 1);
+        const c = await testDummyCountryModelRepository.read(countryCurVal + 1);
         expect(c).toBeDefined();
       });
 
