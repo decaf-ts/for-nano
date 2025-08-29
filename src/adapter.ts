@@ -3,6 +3,7 @@ import {
   Context,
   InternalError,
   onCreate,
+  onCreateUpdate,
   OperationKeys,
 } from "@decaf-ts/db-decorators";
 import "reflect-metadata";
@@ -744,7 +745,7 @@ export class NanoAdapter extends CouchDBAdapter<
     Decoration.flavouredAs("nano")
       .for(updatedByKey)
       .define(
-        onCreate(createdByOnNanoCreateUpdate),
+        onCreateUpdate(createdByOnNanoCreateUpdate),
         propMetadata(updatedByKey, {})
       )
       .apply();
