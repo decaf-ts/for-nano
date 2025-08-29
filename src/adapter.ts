@@ -31,6 +31,7 @@ import {
 } from "@decaf-ts/decorator-validation";
 import { NanoFlags } from "./types";
 import {
+  Adapter,
   PersistenceKeys,
   RelationsMetadata,
   Repository,
@@ -728,7 +729,8 @@ export class NanoAdapter extends CouchDBAdapter<
    *   A->>D: define(onCreate(createdByOnNanoCreateUpdate), propMetadata)
    *   A->>D: apply()
    */
-  static decoration() {
+  static override decoration() {
+    super.decoration();
     const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
     const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
     Decoration.flavouredAs("nano")
@@ -748,3 +750,5 @@ export class NanoAdapter extends CouchDBAdapter<
       .apply();
   }
 }
+
+Adapter.setCurrent(NanoFlavour);
