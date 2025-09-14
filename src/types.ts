@@ -21,3 +21,20 @@ export interface NanoFlags extends RepositoryFlags {
     roles?: string[];
   };
 }
+
+/**
+ * @description Connection configuration for Nano
+ * @summary Defines the necessary parameters to establish a connection to a Nano (CouchDB) server and select a database
+ * @property {string} user - Username to authenticate against the server
+ * @property {string} password - Password to authenticate the user
+ * @property {string} host - Host and port of the server (e.g., "localhost:5984") or full URL host without protocol
+ * @property {string} dbName - The database name to use on the server
+ * @typeDef NanoConfig
+ * @memberOf module:for-nano
+ */
+export type NanoConfig = {
+  user: string;
+  password: string;
+  host: string;
+  dbName: string;
+};

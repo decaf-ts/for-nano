@@ -1,6 +1,5 @@
 import { NanoAdapter } from "../../src";
 import { ServerScope } from "nano";
-import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
@@ -10,10 +9,12 @@ const dbName = "queries_db";
 const dbHost = "localhost:10010";
 
 const con: ServerScope = NanoAdapter.connect(admin, admin_password, dbHost);
-const adapter: NanoAdapter = new NanoAdapter(
-  wrapDocumentScope(con, dbName, user, user_password),
-  "nano"
-);
+const adapter = new NanoAdapter({
+  user: user,
+  password: user_password,
+  host: dbHost,
+  dbName: dbName,
+});
 
 import {
   BaseModel,

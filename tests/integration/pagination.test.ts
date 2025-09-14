@@ -35,11 +35,12 @@ describe(`Pagination`, function () {
     } catch (e: any) {
       if (!(e instanceof ConflictError)) throw e;
     }
-    con = NanoAdapter.connect(user, user_password, dbHost);
-    adapter = new NanoAdapter(
-      wrapDocumentScope(con, dbName, user, user_password),
-      "nano"
-    );
+    adapter = new NanoAdapter({
+      user: user,
+      password: user_password,
+      host: dbHost,
+      dbName: dbName,
+    });
     repo = new Repository(adapter, TestCountryModel);
     const models = Object.keys(new Array(size).fill(0)).map(
       (i) =>

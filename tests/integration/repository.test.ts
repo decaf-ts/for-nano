@@ -3,7 +3,6 @@ import { ServerScope } from "nano";
 import { repository, Repository, uses } from "@decaf-ts/core";
 import { TestModel } from "../TestModel";
 import { ConflictError } from "@decaf-ts/db-decorators";
-import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
 
@@ -31,11 +30,12 @@ describe("repositories", () => {
     } catch (e: any) {
       if (!(e instanceof ConflictError)) throw e;
     }
-    con = NanoAdapter.connect(user, user_password, dbHost);
-    adapter = new NanoAdapter(
-      wrapDocumentScope(con, dbName, user, user_password),
-      "nano"
-    );
+    adapter = new NanoAdapter({
+      user: user,
+      password: user_password,
+      host: dbHost,
+      dbName: dbName,
+    });
   });
 
   afterAll(async () => {

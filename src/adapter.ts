@@ -14,6 +14,7 @@ import {
   generateIndexes,
   MangoQuery,
   MangoResponse,
+  wrapDocumentScope,
 } from "@decaf-ts/for-couchdb";
 import Nano from "nano";
 import {
@@ -30,7 +31,7 @@ import {
   Model,
   propMetadata,
 } from "@decaf-ts/decorator-validation";
-import { NanoFlags } from "./types";
+import { NanoConfig, NanoFlags } from "./types";
 import {
   Adapter,
   PersistenceKeys,
@@ -147,12 +148,34 @@ export async function createdByOnNanoCreateUpdate<
  *   CouchDBAdapter <|-- NanoAdapter
  */
 export class NanoAdapter extends CouchDBAdapter<
+  NanoConfig,
   DocumentScope<any>,
   NanoFlags,
   Context<NanoFlags>
 > {
-  constructor(scope: DocumentScope<any>, alias?: string) {
+  constructor(scope: NanoConfig, alias?: string) {
     super(scope, NanoFlavour, alias);
+  }
+
+  /**
+   * @description Shuts down the adapter instance
+   * @summary Cleans up internal resources and clears the cached Nano client instance
+   * @return {Promise<void>} A promise that resolves when shutdown completes
+   */
+  override async shutdown(): Promise<void> {
+    await this.shutdownProxies();
+    if (this._client) this._client = undefined;
+  }
+
+  /**
+   * @description Lazily creates and returns the Nano DocumentScope client
+   * @summary Uses the adapter configuration to establish a connection and wrap a database scope with credentials
+   * @return {DocumentScope<any>} The ready-to-use Nano DocumentScope for the configured database
+   */
+  protected getClient() {
+    const { user, password, host, dbName } = this.config;
+    const con = NanoAdapter.connect(user, password, host);
+    return wrapDocumentScope(con, dbName, user, password);
   }
 
   /**
@@ -171,7 +194,7 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<NanoFlags> {
     return Object.assign(await super.flags(operation, model, flags), {
       user: {
-        name: this.native.config.url.split("@")[0].split(":")[0],
+        name: this.config.user,
       },
     }) as NanoFlags;
   }
@@ -212,7 +235,7 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<void> {
     const indexes: CreateIndexRequest[] = generateIndexes(models);
     for (const index of indexes) {
-      const res = await this.native.createIndex(index);
+      const res = await this.client.createIndex(index);
       const { result, id, name } = res;
       if (result === "existing")
         throw new ConflictError(`Index for table ${name} with id ${id}`);
@@ -250,7 +273,7 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
-      response = await this.native.insert(model);
+      response = await this.client.insert(model);
     } catch (e: any) {
       throw this.parseError(e);
     }
@@ -296,7 +319,7 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
-      response = await this.native.bulk({ docs: models });
+      response = await this.client.bulk({ docs: models });
     } catch (e: any) {
       throw this.parseError(e);
     }
@@ -345,7 +368,7 @@ export class NanoAdapter extends CouchDBAdapter<
     const _id = this.generateId(tableName, id);
     let record: DocumentGetResponse;
     try {
-      record = await this.native.get(_id);
+      record = await this.client.get(_id);
     } catch (e: any) {
       throw this.parseError(e);
     }
@@ -381,7 +404,7 @@ export class NanoAdapter extends CouchDBAdapter<
     tableName: string,
     ids: (string | number | bigint)[]
   ): Promise<Record<string, any>[]> {
-    const results = await this.native.fetch(
+    const results = await this.client.fetch(
       { keys: ids.map((id) => this.generateId(tableName, id as any)) },
       {}
     );
@@ -426,7 +449,7 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
-      response = await this.native.insert(model);
+      response = await this.client.insert(model);
     } catch (e: any) {
       throw this.parseError(e);
     }
@@ -438,6 +461,14 @@ export class NanoAdapter extends CouchDBAdapter<
     return this.assignMetadata(model, response.rev);
   }
 
+  /**
+   * @description Updates multiple documents in the database
+   * @summary Performs a bulk update operation on the Nano database for the provided documents
+   * @param {string} tableName - The name of the table/collection
+   * @param {Array<string|number>} ids - Array of document identifiers
+   * @param {Promise<Array<Record<string, any>>>} models - Array of updated document data
+   * @return {Promise<Promise<Array<Record<string, any>>>>} A promise that resolves to the updated documents with metadata
+   */
   override async updateAll(
     tableName: string,
     ids: string[] | number[],
@@ -445,7 +476,7 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
-      response = await this.native.bulk({ docs: models });
+      response = await this.client.bulk({ docs: models });
     } catch (e: any) {
       throw this.parseError(e);
     }
@@ -466,6 +497,13 @@ export class NanoAdapter extends CouchDBAdapter<
     );
   }
 
+  /**
+   * @description Deletes a document from the database
+   * @summary Removes a single document from the Nano database by its ID and returns the deleted document metadata
+   * @param {string} tableName - The name of the table/collection
+   * @param {string|number} id - The document identifier
+   * @return {Promise<Record<string, any>>} A promise that resolves to the deleted document with metadata
+   */
   override async delete(
     tableName: string,
     id: string | number
@@ -473,23 +511,30 @@ export class NanoAdapter extends CouchDBAdapter<
     const _id = this.generateId(tableName, id);
     let record: DocumentGetResponse;
     try {
-      record = await this.native.get(_id);
-      await this.native.destroy(_id, record._rev);
+      record = await this.client.get(_id);
+      await this.client.destroy(_id, record._rev);
     } catch (e: any) {
       throw this.parseError(e);
     }
     return this.assignMetadata(record, record._rev);
   }
 
+  /**
+   * @description Deletes multiple documents from the database
+   * @summary Performs a bulk delete operation for the provided IDs and returns the deleted documents metadata
+   * @param {string} tableName - The name of the table/collection
+   * @param {Array<string|number|bigint>} ids - Array of document identifiers to delete
+   * @return {Promise<Array<Record<string, any>>>} A promise resolving to the deleted documents with metadata
+   */
   override async deleteAll(
     tableName: string,
     ids: (string | number | bigint)[]
   ): Promise<Record<string, any>[]> {
-    const results = await this.native.fetch(
+    const results = await this.client.fetch(
       { keys: ids.map((id) => this.generateId(tableName, id as any)) },
       {}
     );
-    const deletion: DocumentBulkResponse[] = await this.native.bulk({
+    const deletion: DocumentBulkResponse[] = await this.client.bulk({
       docs: results.rows.map((r) => {
         (r as any)[CouchDBKeys.DELETED] = true;
         return r;
@@ -508,9 +553,17 @@ export class NanoAdapter extends CouchDBAdapter<
     });
   }
 
+  /**
+   * @description Executes a raw Mango query against the database
+   * @summary Runs a Mango query using Nano's find API and optionally returns only the documents array
+   * @template R - The expected response or document array type
+   * @param {MangoQuery} rawInput - The Mango query to execute
+   * @param {boolean} [docsOnly=true] - Whether to return only the docs array or the full response
+   * @return {Promise<R>} A promise that resolves to the query result, shaped according to docsOnly
+   */
   override async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
     try {
-      const response: MangoResponse<R> = await this.native.find(rawInput);
+      const response: MangoResponse<R> = await this.client.find(rawInput);
       if (response.warning) console.warn(response.warning);
       if (docsOnly) return response.docs as R;
       return response as R;
@@ -519,6 +572,15 @@ export class NanoAdapter extends CouchDBAdapter<
     }
   }
 
+  /**
+   * @description Establishes a connection to a Nano (CouchDB) server
+   * @summary Creates and returns a Nano ServerScope using the given credentials, host, and protocol
+   * @param {string} user - Username used for authentication
+   * @param {string} pass - Password used for authentication
+   * @param {string} [host="localhost:5984"] - Host and port of the CouchDB server
+   * @param {("http"|"https")} [protocol="http"] - Protocol to use for the connection
+   * @return {ServerScope} The Nano ServerScope connection
+   */
   static connect(
     user: string,
     pass: string,

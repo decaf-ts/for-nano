@@ -2,7 +2,6 @@ import { Dispatch } from "@decaf-ts/core";
 import {
   DatabaseChangesResponse,
   DatabaseChangesResultItem,
-  DocumentScope,
   RequestError,
 } from "nano";
 import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
@@ -41,11 +40,23 @@ import { CouchDBKeys } from "@decaf-ts/for-couchdb";
  *   }
  *   Dispatch <|-- NanoDispatch
  */
-export class NanoDispatch extends Dispatch<DocumentScope<any>> {
+export class NanoDispatch extends Dispatch {
   private observerLastUpdate?: string;
   private attemptCounter: number = 0;
+
+  private active: boolean = false;
+
   constructor(private timeout = 5000) {
     super();
+  }
+
+/**
+   * @description Closes the dispatcher
+   * @summary Stops the dispatcher and cleans up any active subscriptions or resources
+   * @return {Promise<void>} A promise that resolves when the dispatcher has been closed
+   */
+  override close(): Promise<void> {
+    return super.close();
   }
 
   /**
@@ -215,11 +226,11 @@ export class NanoDispatch extends Dispatch<DocumentScope<any>> {
     const log = this.log.for(this.initialize);
     const subLog = log.for(subscribeToCouch);
     async function subscribeToCouch(this: NanoDispatch): Promise<void> {
-      if (!this.adapter || !this.native)
+      if (!this.adapter)
         throw new InternalError(`No adapter/native observed for dispatch`);
-
+      if (this.active) return;
       try {
-        this.native.changes(
+        (this.adapter as any).client.changes(
           {
             feed: "continuous",
             include_docs: false,
@@ -234,11 +245,13 @@ export class NanoDispatch extends Dispatch<DocumentScope<any>> {
         subLog.info(
           `Failed to subscribe to couchdb changes: ${e}. Retrying in 5 seconds...`
         );
+        if (!this.active) return;
         await new Promise((resolve) => setTimeout(resolve, this.timeout));
         return subscribeToCouch.call(this);
       }
     }
 
+    this.active = true;
     subscribeToCouch
       .call(this)
       .then(() => {
