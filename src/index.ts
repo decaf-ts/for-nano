@@ -11,7 +11,7 @@ export * from "./adapter";
 
 /**
  * @description A TypeScript module for interacting with Nano databases
- * @summary This module provides a set of utilities, classes, and types for working with Nano databases. It includes repository patterns, adapters, and type definitions to simplify database operations.
+ * @summary This module provides a set of utilities, classes, and types for working with Nano databases. It includes repository patterns, adapters, and type definitions to simplify database operations. Key exports include {@link NanoAdapter}, {@link NanoRepository}, {@link NanoFlags}, and {@link NanoFlavour}.
  * @module for-nano
  */
 

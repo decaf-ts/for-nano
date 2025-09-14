@@ -50,6 +50,11 @@ export class NanoDispatch extends Dispatch {
     super();
   }
 
+/**
+   * @description Closes the dispatcher
+   * @summary Stops the dispatcher and cleans up any active subscriptions or resources
+   * @return {Promise<void>} A promise that resolves when the dispatcher has been closed
+   */
   override close(): Promise<void> {
     return super.close();
   }

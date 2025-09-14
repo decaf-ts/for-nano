@@ -1,5 +1,5 @@
 import { Dirent } from "fs";
-import path from "path";
+import * as path from "path";
 
 describe("Distribution Tests", () => {
   it("reads lib", () => {
