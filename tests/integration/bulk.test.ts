@@ -43,11 +43,12 @@ describe("Bulk operations", () => {
     } catch (e: any) {
       if (!(e instanceof ConflictError)) throw e;
     }
-    con = NanoAdapter.connect(user, user_password, dbHost);
-    adapter = new NanoAdapter(
-      wrapDocumentScope(con, dbName, user, user_password),
-      "nano"
-    );
+    adapter = new NanoAdapter({
+      user: user,
+      password: user_password,
+      host: dbHost,
+      dbName: dbName,
+    });
   });
 
   afterAll(async () => {

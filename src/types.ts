@@ -21,3 +21,10 @@ export interface NanoFlags extends RepositoryFlags {
     roles?: string[];
   };
 }
+
+export type NanoConfig = {
+  user: string;
+  password: string;
+  host: string;
+  dbName: string;
+};

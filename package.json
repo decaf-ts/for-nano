@@ -111,6 +111,8 @@
     "@decaf-ts/for-couchdb": "latest",
     "@decaf-ts/injectable-decorators": "latest",
     "@decaf-ts/reflection": "latest",
+    "@decaf-ts/logging": "latest",
+    "@decaf-ts/transactional-decorators": "latest",
     "axios": "^1.7.8",
     "nano": "^10.1.4",
     "reflect-metadata": "^0.2.1"

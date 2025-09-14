@@ -2,12 +2,7 @@ import { ServerScope } from "nano";
 import { Observer, PersistenceKeys, Repository } from "@decaf-ts/core";
 import { Model } from "@decaf-ts/decorator-validation";
 import { TestModel } from "../TestModel";
-import {
-  ConflictError,
-  NotFoundError,
-  OperationKeys,
-} from "@decaf-ts/db-decorators";
-import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
+import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
 
@@ -36,11 +31,12 @@ describe("Adapter Integration", () => {
     } catch (e: any) {
       if (!(e instanceof ConflictError)) throw e;
     }
-    con = NanoAdapter.connect(user, user_password, dbHost);
-    adapter = new NanoAdapter(
-      wrapDocumentScope(con, dbName, user, user_password),
-      "nano"
-    );
+    adapter = new NanoAdapter({
+      user: user,
+      password: user_password,
+      host: dbHost,
+      dbName: dbName,
+    });
     repo = new Repository(adapter, TestModel);
   });
 
