@@ -247,5 +247,6 @@ export class MethodQueryBuilderRepo extends Repository<
 
 export function getRepo(setAdapter: AnyAdapter) {
   adapter = setAdapter;
+  adapter["index"](TestUserModel);
   return new MethodQueryBuilderRepo();
 }
