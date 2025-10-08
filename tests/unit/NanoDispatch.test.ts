@@ -1,5 +1,6 @@
 import { OperationKeys } from "@decaf-ts/db-decorators";
 import { NanoDispatch } from "../../src/NanoDispatch";
+import { CouchDBKeys } from "@decaf-ts/for-couchdb";
 
 class TestDispatch extends NanoDispatch {
   public calls: Array<{ table: string; op: string; ids: any[] }> = [];
@@ -9,10 +10,9 @@ class TestDispatch extends NanoDispatch {
   }
   // expose for testing
   public async runChangeHandler(error: any, response: any, headers?: any) {
-    // @ts-ignore
     return this.changeHandler(error, response, headers);
   }
-  protected override async updateObservers(
+  override async updateObservers(
     table: string,
     operation: string,
     ids: any[]
@@ -29,15 +29,29 @@ describe("NanoDispatch", () => {
     await (d as any).initialize();
     expect((d as any).active).toBe(true);
     // Due to current implementation, subscribe function returns early when active=true
-    expect(((d as any).adapter.client.changes as jest.Mock).mock.calls.length).toBe(0);
+    expect(
+      ((d as any).adapter.client.changes as jest.Mock).mock.calls.length
+    ).toBe(0);
   });
   test("changeHandler parses string feed, groups ops and updates last step", async () => {
     const d = new TestDispatch();
     const last_seq = "4-g1";
     const feed = [
-      JSON.stringify({ id: `users${require("@decaf-ts/for-couchdb").CouchDBKeys.SEPARATOR}1`, deleted: false, changes: [{ rev: "1-a" }] }),
-      JSON.stringify({ id: `users${require("@decaf-ts/for-couchdb").CouchDBKeys.SEPARATOR}1`, deleted: false, changes: [{ rev: "2-b" }] }),
-      JSON.stringify({ id: `orders${require("@decaf-ts/for-couchdb").CouchDBKeys.SEPARATOR}9`, deleted: true, changes: [{ rev: "7-z" }] }),
+      JSON.stringify({
+        id: `users${CouchDBKeys.SEPARATOR}1`,
+        deleted: false,
+        changes: [{ rev: "1-a" }],
+      }),
+      JSON.stringify({
+        id: `users${CouchDBKeys.SEPARATOR}1`,
+        deleted: false,
+        changes: [{ rev: "2-b" }],
+      }),
+      JSON.stringify({
+        id: `orders${CouchDBKeys.SEPARATOR}9`,
+        deleted: true,
+        changes: [{ rev: "7-z" }],
+      }),
       JSON.stringify({ last_seq }),
       "",
     ].join("\n");
@@ -52,7 +66,10 @@ describe("NanoDispatch", () => {
       (c) => c.table === "users" && c.ids.length > 0
     );
     const hasOrdersDelete = d.calls.some(
-      (c) => c.table === "orders" && c.ids.includes("9") && c.op.toString() === OperationKeys.DELETE.toString()
+      (c) =>
+        c.table === "orders" &&
+        c.ids.includes("9") &&
+        c.op.toString() === OperationKeys.DELETE.toString()
     );
     expect(hasUsers).toBe(true);
     expect(hasOrdersDelete).toBe(true);
@@ -72,5 +89,4 @@ describe("NanoDispatch", () => {
     await d.runChangeHandler(null, "{not-json}\n");
     expect(d.calls.length).toBe(0);
   });
-
 });

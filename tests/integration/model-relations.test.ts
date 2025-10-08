@@ -18,7 +18,7 @@ import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
 import { Condition, Repository } from "@decaf-ts/core";
 import { sequenceNameForModel } from "@decaf-ts/core";
 import { Sequence } from "@decaf-ts/core";
-import { wrapDocumentScope, Sequence as Seq } from "@decaf-ts/for-couchdb";
+import { Sequence as Seq } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
 

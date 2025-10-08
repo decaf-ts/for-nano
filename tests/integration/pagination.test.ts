@@ -3,7 +3,6 @@ import { ServerScope } from "nano";
 import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
 import { OrderDirection, Paginator, Repository } from "@decaf-ts/core";
 import { TestCountryModel } from "./models";
-import { wrapDocumentScope } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
 

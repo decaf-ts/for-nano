@@ -21,6 +21,7 @@ import {
   UnsupportedError,
   uses,
 } from "@decaf-ts/core";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export type AnyAdapter = Adapter<any, any, any, any, any>;
 let adapter: AnyAdapter;

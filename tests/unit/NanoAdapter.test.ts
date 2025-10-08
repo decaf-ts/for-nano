@@ -23,7 +23,11 @@ function makeAdapter(overrides: any = {}) {
 describe("NanoAdapter core methods", () => {
   test("flags merges user", async () => {
     const adp = makeAdapter();
-    const res: any = await (adp as any).flags(OperationKeys.CREATE, class {}, {});
+    const res: any = await (adp as any).flags(
+      OperationKeys.CREATE,
+      class {},
+      {}
+    );
     expect(res.user).toEqual({ name: "u" });
   });
 
@@ -33,14 +37,17 @@ describe("NanoAdapter core methods", () => {
     expect(d.constructor.name).toBe("NanoDispatch");
   });
 
-
   test("create ok=false throws InternalError", async () => {
-    const adp = makeAdapter({ insert: jest.fn().mockResolvedValue({ ok: false }) });
+    const adp = makeAdapter({
+      insert: jest.fn().mockResolvedValue({ ok: false }),
+    });
     await expect(adp.create("t", "1", { a: 1 })).rejects.toThrow(InternalError);
   });
 
   test("create success assigns metadata", async () => {
-    const adp = makeAdapter({ insert: jest.fn().mockResolvedValue({ ok: true, rev: "2-a" }) });
+    const adp = makeAdapter({
+      insert: jest.fn().mockResolvedValue({ ok: true, rev: "2-a" }),
+    });
     const m: any = await adp.create("t", "1", { a: 1 });
     expect(m[CouchDBKeys.REV]).toBeUndefined(); // should not copy as field
     expect((m as any)[PersistenceKeys.METADATA]).toBe("2-a");
@@ -53,11 +60,15 @@ describe("NanoAdapter core methods", () => {
         { ok: false, error: "conflict", reason: "exists" },
       ]),
     });
-    await expect(adp.createAll("t", ["1", "2"], [{}, {}])).rejects.toThrow(/conflict/);
+    await expect(adp.createAll("t", ["1", "2"], [{}, {}])).rejects.toThrow(
+      /conflict/
+    );
   });
 
   test("update ok=false throws InternalError", async () => {
-    const adp = makeAdapter({ insert: jest.fn().mockResolvedValue({ ok: false }) });
+    const adp = makeAdapter({
+      insert: jest.fn().mockResolvedValue({ ok: false }),
+    });
     await expect(adp.update("t", "1", { a: 1 })).rejects.toThrow(InternalError);
   });
 
@@ -74,13 +85,15 @@ describe("NanoAdapter core methods", () => {
     // assign metadata as adapter does
     Object.defineProperty(m1, PersistenceKeys.METADATA, { value: "1-a" });
     Object.defineProperty(m2, PersistenceKeys.METADATA, { value: "1-b" });
-    await expect(
-      adp.updateAll("t", ["1", "2"], [m1, m2])
-    ).rejects.toThrow(/bad/);
+    await expect(adp.updateAll("t", ["1", "2"], [m1, m2])).rejects.toThrow(
+      /bad/
+    );
   });
 
   test("read returns assigned metadata", async () => {
-    const adp = makeAdapter({ get: jest.fn().mockResolvedValue({ _rev: "5-x", a: 1 }) });
+    const adp = makeAdapter({
+      get: jest.fn().mockResolvedValue({ _rev: "5-x", a: 1 }),
+    });
     const r = await adp.read("users", "1");
     expect((r as any)[PersistenceKeys.METADATA]).toBe("5-x");
   });
@@ -94,8 +107,9 @@ describe("NanoAdapter core methods", () => {
         ],
       }),
     });
-    await expect(adp.readAll("users", ["1", "2"]))
-      .rejects.toThrow(InternalError);
+    await expect(adp.readAll("users", ["1", "2"])).rejects.toThrow(
+      InternalError
+    );
   });
 
   test("delete returns deleted doc metadata", async () => {
@@ -128,7 +142,9 @@ describe("NanoAdapter core methods", () => {
 
   test("raw returns docsOnly and full response with warning", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
-    const adp = makeAdapter({ find: jest.fn().mockResolvedValue({ docs: [1, 2], warning: "w" }) });
+    const adp = makeAdapter({
+      find: jest.fn().mockResolvedValue({ docs: [1, 2], warning: "w" }),
+    });
     const docs = await adp.raw<any>({} as any, true);
     expect(docs).toEqual([1, 2]);
     const full = await adp.raw<any>({} as any, false);
@@ -141,10 +157,12 @@ describe("NanoAdapter core methods", () => {
 describe("NanoAdapter static helpers", () => {
   test("connect builds proper URL", () => {
     // Monkey patch global Nano function to capture URL.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-require-imports
     const orig = require("nano");
     const mock = jest.fn();
     jest.resetModules();
     jest.doMock("nano", () => mock, { virtual: true });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { NanoAdapter: NA } = require("../../src/adapter");
     NA.connect("a", "b", "h:1", "https");
     expect(mock).toHaveBeenCalledWith("https://a:b@h:1");
@@ -152,9 +170,20 @@ describe("NanoAdapter static helpers", () => {
   });
 
   test("createDatabase throws on ok=false and deleteDatabase ok=false", async () => {
-    const con: any = { db: { create: jest.fn().mockResolvedValue({ ok: false, error: "e", reason: "r" }), destroy: jest.fn().mockResolvedValue({ ok: false }) } };
-    await expect(NanoAdapter.createDatabase(con as any, "db")).rejects.toThrow();
-    await expect(NanoAdapter.deleteDatabase(con as any, "db")).rejects.toThrow(InternalError);
+    const con: any = {
+      db: {
+        create: jest
+          .fn()
+          .mockResolvedValue({ ok: false, error: "e", reason: "r" }),
+        destroy: jest.fn().mockResolvedValue({ ok: false }),
+      },
+    };
+    await expect(
+      NanoAdapter.createDatabase(con as any, "db")
+    ).rejects.toThrow();
+    await expect(NanoAdapter.deleteDatabase(con as any, "db")).rejects.toThrow(
+      InternalError
+    );
   });
 
   test("createUser success path and deleteUser", async () => {
@@ -174,7 +203,6 @@ describe("NanoAdapter static helpers", () => {
   });
 });
 
-
 // Additional coverage tests
 describe("NanoAdapter additional coverage", () => {
   test("createAll success assigns multiple metadata", async () => {
@@ -191,7 +219,9 @@ describe("NanoAdapter additional coverage", () => {
   });
 
   test("update success assigns metadata", async () => {
-    const adp = makeAdapter({ insert: jest.fn().mockResolvedValue({ ok: true, rev: "3-zz" }) });
+    const adp = makeAdapter({
+      insert: jest.fn().mockResolvedValue({ ok: true, rev: "3-zz" }),
+    });
     const m: any = {};
     Object.defineProperty(m, PersistenceKeys.METADATA, { value: "2-yy" });
     const r = await adp.update("t", "1", m);
@@ -220,9 +250,18 @@ describe("NanoAdapter additional coverage", () => {
   });
 
   test("createDatabase and deleteDatabase success", async () => {
-    const con: any = { db: { create: jest.fn().mockResolvedValue({ ok: true }), destroy: jest.fn().mockResolvedValue({ ok: true }) } };
-    await expect(NanoAdapter.createDatabase(con as any, "db")).resolves.toBeUndefined();
-    await expect(NanoAdapter.deleteDatabase(con as any, "db")).resolves.toBeUndefined();
+    const con: any = {
+      db: {
+        create: jest.fn().mockResolvedValue({ ok: true }),
+        destroy: jest.fn().mockResolvedValue({ ok: true }),
+      },
+    };
+    await expect(
+      NanoAdapter.createDatabase(con as any, "db")
+    ).resolves.toBeUndefined();
+    await expect(
+      NanoAdapter.deleteDatabase(con as any, "db")
+    ).resolves.toBeUndefined();
   });
 });
 
@@ -232,14 +271,34 @@ import type { Context } from "@decaf-ts/db-decorators";
 
 describe("createdByOnNanoCreateUpdate", () => {
   test("sets created_by from context user", async () => {
-    const ctx = { get: (k: string) => ({ name: "tester" }) } as unknown as Context<any>;
+    const ctx = {
+      get: () => ({ name: "tester" }),
+    } as unknown as Context<any>;
     const model: any = {};
-    await createdByOnNanoCreateUpdate.call({} as any, ctx, {} as any, "created_by" as any, model);
+    await createdByOnNanoCreateUpdate.call(
+      {} as any,
+      ctx,
+      {} as any,
+      "created_by" as any,
+      model
+    );
     expect(model.created_by).toBe("tester");
   });
   test("throws UnsupportedError when no user in context", async () => {
-    const ctx = { get: (_: string) => { throw new Error("nope"); } } as unknown as Context<any>;
+    const ctx = {
+      get: () => {
+        throw new Error("nope");
+      },
+    } as unknown as Context<any>;
     const model: any = {};
-    await expect(createdByOnNanoCreateUpdate.call({} as any, ctx, {} as any, "created_by" as any, model)).rejects.toThrow();
+    await expect(
+      createdByOnNanoCreateUpdate.call(
+        {} as any,
+        ctx,
+        {} as any,
+        "created_by" as any,
+        model
+      )
+    ).rejects.toThrow();
   });
 });
