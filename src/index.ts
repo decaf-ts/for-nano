@@ -1,4 +1,5 @@
 import { NanoAdapter } from "./adapter";
+import { Metadata } from "@decaf-ts/decoration";
 
 // Forces override for Nano Decoration
 NanoAdapter.decoration();
@@ -22,3 +23,13 @@ export * from "./adapter";
  * @memberOf module:for-nano
  */
 export const VERSION = "##VERSION##";
+
+/**
+ * @description Package version identifier
+ * @summary Stores the current package version string for the for-nano module
+ * @const PACKAGE_NAME
+ * @memberOf module:for-nano
+ */
+export const PACKAGE_NAME = "##PACKAGE##";
+
+Metadata.registerLibrary(PACKAGE_NAME, VERSION);
