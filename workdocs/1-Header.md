@@ -1,4 +1,4 @@
-![Banner](./workdocs/assets/Banner.png)
+![Banner](./workdocs/assets/decaf-logo.svg)
 
 # Decaf's Nano (CouchDB) Module
 
