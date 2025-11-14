@@ -5,7 +5,6 @@ import {
   model,
   ModelArg,
   pattern,
-  prop,
   required,
 } from "@decaf-ts/decorator-validation";
 import {
@@ -16,6 +15,7 @@ import {
   oneToOne,
   pk,
 } from "@decaf-ts/core";
+import { prop } from "@decaf-ts/decoration";
 
 @model()
 export class TestCountryModel extends BaseModel {
