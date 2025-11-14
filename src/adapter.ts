@@ -25,12 +25,7 @@ import {
   MaybeDocument,
   ServerScope,
 } from "nano";
-import {
-  Constructor,
-  Decoration,
-  Model,
-  propMetadata,
-} from "@decaf-ts/decorator-validation";
+import { Model } from "@decaf-ts/decorator-validation";
 import { NanoConfig, NanoFlags } from "./types";
 import {
   Adapter,
@@ -42,6 +37,7 @@ import {
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
 import { NanoDispatch } from "./NanoDispatch";
+import { Constructor, Decoration, propMetadata } from "@decaf-ts/decoration";
 
 /**
  * @description Sets the creator or updater field in a model based on the user in the context
