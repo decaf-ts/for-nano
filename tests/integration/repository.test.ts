@@ -1,10 +1,11 @@
 import { Model } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
-import { repository, Repository, uses } from "@decaf-ts/core";
+import { repository, Repository } from "@decaf-ts/core";
 import { TestModel } from "../TestModel";
 import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
+import { uses } from "@decaf-ts/decoration";
 
 const admin = "couchdb.admin";
 const admin_password = "couchdb.admin";
