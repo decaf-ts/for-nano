@@ -526,6 +526,7 @@ export class NanoAdapter extends CouchDBAdapter<
     tableName: string,
     ids: (string | number | bigint)[]
   ): Promise<Record<string, any>[]> {
+    const log = this.log.for(this.deleteAll);
     const results = await this.client.fetch(
       { keys: ids.map((id) => this.generateId(tableName, id as any)) },
       {}
@@ -537,7 +538,7 @@ export class NanoAdapter extends CouchDBAdapter<
       }),
     });
     deletion.forEach((d: DocumentBulkResponse) => {
-      if (d.error) console.error(d.error);
+      if (d.error) log.error(d.error);
     });
     return results.rows.map((r) => {
       if ((r as any).error) throw new InternalError((r as any).error);
@@ -560,7 +561,7 @@ export class NanoAdapter extends CouchDBAdapter<
   override async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
     try {
       const response: MangoResponse<R> = await this.client.find(rawInput);
-      if (response.warning) console.warn(response.warning);
+      if (response.warning) this.log.for(this.raw).warn(response.warning);
       if (docsOnly) return response.docs as R;
       return response as R;
     } catch (e: any) {
