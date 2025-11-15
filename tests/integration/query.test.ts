@@ -23,8 +23,8 @@ import {
   OrderDirection,
   pk,
   Repository,
-  uses,
 } from "@decaf-ts/core";
+import { uses } from "@decaf-ts/decoration";
 import {
   min,
   minlength,
@@ -78,7 +78,7 @@ describe("Queries", () => {
 
     @required()
     @readonly()
-    @type([String.name])
+    @type([String])
     sex!: "M" | "F";
 
     constructor(arg?: ModelArg<TestUser>) {

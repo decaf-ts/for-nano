@@ -1,10 +1,5 @@
-import {
-  BaseModel,
-  PersistenceKeys,
-  pk,
-  Repository,
-  uses,
-} from "@decaf-ts/core";
+import { BaseModel, PersistenceKeys, pk, Repository } from "@decaf-ts/core";
+import { uses } from "@decaf-ts/decoration";
 import {
   minlength,
   Model,
