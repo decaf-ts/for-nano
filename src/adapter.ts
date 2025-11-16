@@ -31,7 +31,6 @@ import {
   Adapter,
   PersistenceKeys,
   RelationsMetadata,
-  Repository,
   UnsupportedError,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
@@ -791,21 +790,19 @@ export class NanoAdapter extends CouchDBAdapter<
    */
   static override decoration() {
     super.decoration();
-    const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
-    const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
-    Decoration.flavouredAs("nano")
-      .for(createdByKey)
+    Decoration.flavouredAs(NanoFlavour)
+      .for(PersistenceKeys.CREATED_BY)
       .define(
         onCreate(createdByOnNanoCreateUpdate),
-        propMetadata(createdByKey, {})
+        propMetadata(PersistenceKeys.CREATED_BY, {})
       )
       .apply();
 
-    Decoration.flavouredAs("nano")
-      .for(updatedByKey)
+    Decoration.flavouredAs(NanoFlavour)
+      .for(PersistenceKeys.UPDATED_BY)
       .define(
         onCreateUpdate(createdByOnNanoCreateUpdate),
-        propMetadata(updatedByKey, {})
+        propMetadata(PersistenceKeys.UPDATED_BY, {})
       )
       .apply();
   }
