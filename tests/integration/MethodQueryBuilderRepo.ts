@@ -19,8 +19,8 @@ import {
   repository,
   table,
   UnsupportedError,
-  uses,
 } from "@decaf-ts/core";
+import { uses } from "@decaf-ts/decoration";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 export type AnyAdapter = Adapter<any, any, any, any, any>;

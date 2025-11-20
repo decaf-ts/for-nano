@@ -25,23 +25,18 @@ import {
   MaybeDocument,
   ServerScope,
 } from "nano";
-import {
-  Constructor,
-  Decoration,
-  Model,
-  propMetadata,
-} from "@decaf-ts/decorator-validation";
+import { Model } from "@decaf-ts/decorator-validation";
 import { NanoConfig, NanoFlags } from "./types";
 import {
   Adapter,
   PersistenceKeys,
   RelationsMetadata,
-  Repository,
   UnsupportedError,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
 import { NanoDispatch } from "./NanoDispatch";
+import { Constructor, Decoration, propMetadata } from "@decaf-ts/decoration";
 
 /**
  * @description Sets the creator or updater field in a model based on the user in the context
@@ -530,6 +525,7 @@ export class NanoAdapter extends CouchDBAdapter<
     tableName: string,
     ids: (string | number | bigint)[]
   ): Promise<Record<string, any>[]> {
+    const log = this.log.for(this.deleteAll);
     const results = await this.client.fetch(
       { keys: ids.map((id) => this.generateId(tableName, id as any)) },
       {}
@@ -541,7 +537,7 @@ export class NanoAdapter extends CouchDBAdapter<
       }),
     });
     deletion.forEach((d: DocumentBulkResponse) => {
-      if (d.error) console.error(d.error);
+      if (d.error) log.error(d.error);
     });
     return results.rows.map((r) => {
       if ((r as any).error) throw new InternalError((r as any).error);
@@ -564,7 +560,7 @@ export class NanoAdapter extends CouchDBAdapter<
   override async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
     try {
       const response: MangoResponse<R> = await this.client.find(rawInput);
-      if (response.warning) console.warn(response.warning);
+      if (response.warning) this.log.for(this.raw).warn(response.warning);
       if (docsOnly) return response.docs as R;
       return response as R;
     } catch (e: any) {
@@ -794,21 +790,19 @@ export class NanoAdapter extends CouchDBAdapter<
    */
   static override decoration() {
     super.decoration();
-    const createdByKey = Repository.key(PersistenceKeys.CREATED_BY);
-    const updatedByKey = Repository.key(PersistenceKeys.UPDATED_BY);
-    Decoration.flavouredAs("nano")
-      .for(createdByKey)
+    Decoration.flavouredAs(NanoFlavour)
+      .for(PersistenceKeys.CREATED_BY)
       .define(
         onCreate(createdByOnNanoCreateUpdate),
-        propMetadata(createdByKey, {})
+        propMetadata(PersistenceKeys.CREATED_BY, {})
       )
       .apply();
 
-    Decoration.flavouredAs("nano")
-      .for(updatedByKey)
+    Decoration.flavouredAs(NanoFlavour)
+      .for(PersistenceKeys.UPDATED_BY)
       .define(
         onCreateUpdate(createdByOnNanoCreateUpdate),
-        propMetadata(updatedByKey, {})
+        propMetadata(PersistenceKeys.UPDATED_BY, {})
       )
       .apply();
   }
