@@ -1,11 +1,11 @@
-import { Dispatch } from "@decaf-ts/core";
+import { Adapter, Dispatch } from "@decaf-ts/core";
 import {
   DatabaseChangesResponse,
   DatabaseChangesResultItem,
   RequestError,
 } from "nano";
 import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
-import { CouchDBKeys } from "@decaf-ts/for-couchdb";
+import { CouchDBAdapter, CouchDBKeys } from "@decaf-ts/for-couchdb";
 
 /**
  * @description Dispatcher for Nano database change events
@@ -40,7 +40,7 @@ import { CouchDBKeys } from "@decaf-ts/for-couchdb";
  *   }
  *   Dispatch <|-- NanoDispatch
  */
-export class NanoDispatch extends Dispatch {
+export class NanoDispatch extends Dispatch<CouchDBAdapter<any, any, any>> {
   private observerLastUpdate?: string;
   private attemptCounter: number = 0;
 
@@ -50,7 +50,7 @@ export class NanoDispatch extends Dispatch {
     super();
   }
 
-/**
+  /**
    * @description Closes the dispatcher
    * @summary Stops the dispatcher and cleans up any active subscriptions or resources
    * @return {Promise<void>} A promise that resolves when the dispatcher has been closed
@@ -93,10 +93,12 @@ export class NanoDispatch extends Dispatch {
   protected async changeHandler(
     error: RequestError | null,
     response: (DatabaseChangesResponse | DatabaseChangesResultItem)[] | string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     headers?: any
   ) {
-    const log = this.log.for(this.changeHandler);
+    const { log, ctx } = Adapter.logCtx(
+      [error, response, headers],
+      this.changeHandler
+    );
     if (error) return log.error(`Error in change request: ${error}`);
     try {
       response = (
@@ -172,9 +174,12 @@ export class NanoDispatch extends Dispatch {
       for (const table of Object.keys(changes)) {
         for (const op of Object.keys(changes[table])) {
           try {
-            await this.updateObservers(table, op, [
-              ...changes[table][op].ids.values(),
-            ]);
+            await this.updateObservers(
+              table,
+              op,
+              [...changes[table][op].ids.values()],
+              ctx
+            );
             this.observerLastUpdate = changes[table][op].step;
             log.verbose(`Observer refresh dispatched by ${op} for ${table}`);
             log.debug(`pks: ${Array.from(changes[table][op].ids.values())}`);

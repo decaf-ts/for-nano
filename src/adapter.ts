@@ -5,8 +5,8 @@ import {
   onCreate,
   onCreateUpdate,
   OperationKeys,
+  PrimaryKeyType,
 } from "@decaf-ts/db-decorators";
-import "reflect-metadata";
 import {
   CouchDBAdapter,
   CouchDBKeys,
@@ -29,6 +29,8 @@ import { Model } from "@decaf-ts/decorator-validation";
 import { NanoConfig, NanoFlags } from "./types";
 import {
   Adapter,
+  ContextualArgs,
+  FlagsOf,
   PersistenceKeys,
   RelationsMetadata,
   UnsupportedError,
@@ -142,12 +144,9 @@ export async function createdByOnNanoCreateUpdate<
  *   }
  *   CouchDBAdapter <|-- NanoAdapter
  */
-export class NanoAdapter extends CouchDBAdapter<
-  NanoConfig,
-  DocumentScope<any>,
-  NanoFlags,
-  Context<NanoFlags>
-> {
+export class NanoAdapter<
+  C extends Context<NanoFlags> = Context<NanoFlags>,
+> extends CouchDBAdapter<NanoConfig, DocumentScope<any>, C> {
   constructor(scope: NanoConfig, alias?: string) {
     super(scope, NanoFlavour, alias);
   }
@@ -185,13 +184,13 @@ export class NanoAdapter extends CouchDBAdapter<
   protected override async flags<M extends Model>(
     operation: OperationKeys,
     model: Constructor<M>,
-    flags: Partial<NanoFlags>
-  ): Promise<NanoFlags> {
+    flags: Partial<FlagsOf<C>>
+  ): Promise<FlagsOf<C>> {
     return Object.assign(await super.flags(operation, model, flags), {
       user: {
         name: this.config.user,
       },
-    }) as NanoFlags;
+    }) as FlagsOf<C>;
   }
 
   /**
@@ -261,10 +260,12 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw InternalError
    *   end
    */
-  override async create(
-    tableName: string,
-    id: string | number,
-    model: Record<string, any>
+  override async create<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    model: Record<string, any>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
@@ -307,10 +308,12 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw parseError(e)
    *   end
    */
-  override async createAll(
-    tableName: string,
-    ids: string[] | number[],
-    models: Record<string, any>[]
+  override async createAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[],
+    models: Record<string, any>[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
@@ -356,11 +359,13 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw parseError(e)
    *   end
    */
-  override async read(
-    tableName: string,
-    id: string | number
+  override async read<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>> {
-    const _id = this.generateId(tableName, id);
+    const _id = this.generateId(Model.tableName(tableName), id);
     let record: DocumentGetResponse;
     try {
       record = await this.client.get(_id);
@@ -395,12 +400,15 @@ export class NanoAdapter extends CouchDBAdapter<
    *   end
    *   A-->>A: return documents with metadata
    */
-  override async readAll(
-    tableName: string,
-    ids: (string | number | bigint)[]
+  override async readAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: (string | number | bigint)[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>[]> {
+    const table = Model.tableName(tableName);
     const results = await this.client.fetch(
-      { keys: ids.map((id) => this.generateId(tableName, id as any)) },
+      { keys: ids.map((id) => this.generateId(table, id as any)) },
       {}
     );
     return results.rows.map((r) => {
@@ -437,10 +445,12 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw InternalError
    *   end
    */
-  override async update(
-    tableName: string,
-    id: string | number,
-    model: Record<string, any>
+  override async update<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    model: Record<string, any>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
@@ -464,10 +474,12 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {Promise<Array<Record<string, any>>>} models - Array of updated document data
    * @return {Promise<Promise<Array<Record<string, any>>>>} A promise that resolves to the updated documents with metadata
    */
-  override async updateAll(
-    tableName: string,
-    ids: string[] | number[],
-    models: Record<string, any>[]
+  override async updateAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[],
+    models: Record<string, any>[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
@@ -499,11 +511,13 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {string|number} id - The document identifier
    * @return {Promise<Record<string, any>>} A promise that resolves to the deleted document with metadata
    */
-  override async delete(
-    tableName: string,
-    id: string | number
+  override async delete<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>> {
-    const _id = this.generateId(tableName, id);
+    const _id = this.generateId(Model.tableName(tableName), id);
     let record: DocumentGetResponse;
     try {
       record = await this.client.get(_id);
@@ -521,13 +535,16 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {Array<string|number|bigint>} ids - Array of document identifiers to delete
    * @return {Promise<Array<Record<string, any>>>} A promise resolving to the deleted documents with metadata
    */
-  override async deleteAll(
-    tableName: string,
-    ids: (string | number | bigint)[]
+  override async deleteAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[],
+
+    ...args: ContextualArgs<C>
   ): Promise<Record<string, any>[]> {
-    const log = this.log.for(this.deleteAll);
+    const { log } = this.logCtx(args, this.deleteAll);
+    const table = Model.tableName(tableName);
     const results = await this.client.fetch(
-      { keys: ids.map((id) => this.generateId(tableName, id as any)) },
+      { keys: ids.map((id) => this.generateId(table, id as any)) },
       {}
     );
     const deletion: DocumentBulkResponse[] = await this.client.bulk({
@@ -557,10 +574,17 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {boolean} [docsOnly=true] - Whether to return only the docs array or the full response
    * @return {Promise<R>} A promise that resolves to the query result, shaped according to docsOnly
    */
-  override async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
+  override async raw<R>(
+    rawInput: MangoQuery,
+    docsOnly = true,
+    ...args: ContextualArgs<C>
+  ): Promise<R> {
     try {
       const response: MangoResponse<R> = await this.client.find(rawInput);
-      if (response.warning) this.log.for(this.raw).warn(response.warning);
+      if (response.warning) {
+        const { log } = this.logCtx(args, this.raw);
+        log.for(this.raw).warn(response.warning);
+      }
       if (docsOnly) return response.docs as R;
       return response as R;
     } catch (e: any) {
