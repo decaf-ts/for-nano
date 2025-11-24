@@ -1,5 +1,6 @@
 import { ServerScope } from "nano";
-import { Observer, PersistenceKeys, Repository } from "@decaf-ts/core";
+import { Observer, PersistenceKeys } from "@decaf-ts/core";
+import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
 import { TestModel } from "../TestModel";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
@@ -37,7 +38,7 @@ describe("Adapter Integration", () => {
       host: dbHost,
       dbName: dbName,
     });
-    repo = new Repository(adapter, TestModel);
+    repo = new CouchDBRepository(adapter, TestModel);
   });
 
   let observer: Observer;
@@ -106,7 +107,9 @@ describe("Adapter Integration", () => {
 
     expect(updated).toBeDefined();
     expect(updated.equals(created)).toEqual(false);
-    expect(updated.equals(created, "updatedOn", "name")).toEqual(true); // minus the expected changes
+    expect(
+      updated.equals(created, "updatedAt", "updatedOn", "name")
+    ).toEqual(true); // minus the expected changes
     const metadata = (updated as any)[PersistenceKeys.METADATA];
     expect(metadata).toBeDefined();
   });

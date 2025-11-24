@@ -1,7 +1,8 @@
 import { Model } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
 import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
-import { OrderDirection, Paginator, Repository } from "@decaf-ts/core";
+import { OrderDirection, Paginator } from "@decaf-ts/core";
+import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { TestCountryModel } from "./models";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
@@ -40,7 +41,7 @@ describe(`Pagination`, function () {
       host: dbHost,
       dbName: dbName,
     });
-    repo = new Repository(adapter, TestCountryModel);
+    repo = new CouchDBRepository(adapter, TestCountryModel);
     const models = Object.keys(new Array(size).fill(0)).map(
       (i) =>
         new TestCountryModel({

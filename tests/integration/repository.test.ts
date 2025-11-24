@@ -1,6 +1,7 @@
 import { Model } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
 import { repository, Repository } from "@decaf-ts/core";
+import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { TestModel } from "../TestModel";
 import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
@@ -44,12 +45,12 @@ describe("repositories", () => {
   });
 
   it("instantiates via constructor", () => {
-    const repo: NanoRepository<TestModel> = new Repository(
+    const repo: NanoRepository<TestModel> = new CouchDBRepository(
       adapter as any,
       TestModel
     );
     expect(repo).toBeDefined();
-    expect(repo).toBeInstanceOf(Repository);
+    expect(repo).toBeInstanceOf(CouchDBRepository);
   });
 
   it("instantiates via Repository.get with @uses decorator on model", () => {

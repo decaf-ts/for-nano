@@ -1,4 +1,4 @@
-import { OperationKeys } from "@decaf-ts/db-decorators";
+import { Context, OperationKeys } from "@decaf-ts/db-decorators";
 import { NanoDispatch } from "../../src/NanoDispatch";
 import { CouchDBKeys } from "@decaf-ts/for-couchdb";
 
@@ -10,7 +10,10 @@ class TestDispatch extends NanoDispatch {
   }
   // expose for testing
   public async runChangeHandler(error: any, response: any, headers?: any) {
-    return this.changeHandler(error, response, headers);
+    const ctx = Context.factory({
+      operation: OperationKeys.UPDATE,
+    } as any);
+    return (this.changeHandler as any).call(this, error, response, headers, ctx);
   }
   override async updateObservers(
     table: string,

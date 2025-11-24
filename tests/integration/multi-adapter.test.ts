@@ -7,7 +7,8 @@ Adapter.setCurrent(RamFlavour);
 
 console.log(`After ram: ${Metadata.flavourOf(TestCountryModel)}`);
 import { ServerScope } from "nano";
-import { Observer, PersistenceKeys, Repository } from "@decaf-ts/core";
+import { Observer, PersistenceKeys } from "@decaf-ts/core";
+import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter, NanoFlavour } from "../../src";
@@ -47,7 +48,7 @@ describe("multi adapter", () => {
       host: dbHost,
       dbName: dbName,
     });
-    repo = new Repository(adapter, TestCountryModel);
+    repo = new CouchDBRepository(adapter, TestCountryModel);
   });
 
   let observer: Observer;
@@ -116,7 +117,9 @@ describe("multi adapter", () => {
 
     expect(updated).toBeDefined();
     expect(updated.equals(created)).toEqual(false);
-    expect(updated.equals(created, "updatedOn", "name")).toEqual(true); // minus the expected changes
+    expect(
+      updated.equals(created, "updatedAt", "updatedOn", "name")
+    ).toEqual(true); // minus the expected changes
     const metadata = (updated as any)[PersistenceKeys.METADATA];
     expect(metadata).toBeDefined();
   });

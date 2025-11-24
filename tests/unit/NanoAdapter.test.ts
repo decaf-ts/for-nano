@@ -1,7 +1,12 @@
-import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
+import {
+  Context,
+  InternalError,
+  OperationKeys,
+} from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src/adapter";
 import { CouchDBKeys } from "@decaf-ts/for-couchdb";
 import { PersistenceKeys } from "@decaf-ts/core";
+import { Logging } from "@decaf-ts/logging";
 
 function makeAdapter(overrides: any = {}) {
   const cfg = { user: "u", password: "p", host: "h", dbName: "db" } as any;
@@ -18,6 +23,13 @@ function makeAdapter(overrides: any = {}) {
     ...overrides,
   };
   return adp as any as NanoAdapter;
+}
+
+function ctx() {
+  return Context.factory({
+    logger: Logging.get(),
+    operation: OperationKeys.CREATE,
+  } as any);
 }
 
 describe("NanoAdapter core methods", () => {
@@ -41,14 +53,16 @@ describe("NanoAdapter core methods", () => {
     const adp = makeAdapter({
       insert: jest.fn().mockResolvedValue({ ok: false }),
     });
-    await expect(adp.create("t", "1", { a: 1 })).rejects.toThrow(InternalError);
+    await expect(adp.create("t", "1", { a: 1 }, ctx())).rejects.toThrow(
+      InternalError
+    );
   });
 
   test("create success assigns metadata", async () => {
     const adp = makeAdapter({
       insert: jest.fn().mockResolvedValue({ ok: true, rev: "2-a" }),
     });
-    const m: any = await adp.create("t", "1", { a: 1 });
+    const m: any = await adp.create("t", "1", { a: 1 }, ctx());
     expect(m[CouchDBKeys.REV]).toBeUndefined(); // should not copy as field
     expect((m as any)[PersistenceKeys.METADATA]).toBe("2-a");
   });
@@ -60,16 +74,18 @@ describe("NanoAdapter core methods", () => {
         { ok: false, error: "conflict", reason: "exists" },
       ]),
     });
-    await expect(adp.createAll("t", ["1", "2"], [{}, {}])).rejects.toThrow(
-      /conflict/
-    );
+    await expect(
+      adp.createAll("t", ["1", "2"], [{}, {}], ctx())
+    ).rejects.toThrow(/conflict/);
   });
 
   test("update ok=false throws InternalError", async () => {
     const adp = makeAdapter({
       insert: jest.fn().mockResolvedValue({ ok: false }),
     });
-    await expect(adp.update("t", "1", { a: 1 })).rejects.toThrow(InternalError);
+    await expect(adp.update("t", "1", { a: 1 }, ctx())).rejects.toThrow(
+      InternalError
+    );
   });
 
   test("updateAll aggregates errors from bulk", async () => {
@@ -85,16 +101,16 @@ describe("NanoAdapter core methods", () => {
     // assign metadata as adapter does
     Object.defineProperty(m1, PersistenceKeys.METADATA, { value: "1-a" });
     Object.defineProperty(m2, PersistenceKeys.METADATA, { value: "1-b" });
-    await expect(adp.updateAll("t", ["1", "2"], [m1, m2])).rejects.toThrow(
-      /bad/
-    );
+    await expect(
+      adp.updateAll("t", ["1", "2"], [m1, m2], ctx())
+    ).rejects.toThrow(/bad/);
   });
 
   test("read returns assigned metadata", async () => {
     const adp = makeAdapter({
       get: jest.fn().mockResolvedValue({ _rev: "5-x", a: 1 }),
     });
-    const r = await adp.read("users", "1");
+    const r = await adp.read("users", "1", ctx());
     expect((r as any)[PersistenceKeys.METADATA]).toBe("5-x");
   });
 
@@ -107,7 +123,7 @@ describe("NanoAdapter core methods", () => {
         ],
       }),
     });
-    await expect(adp.readAll("users", ["1", "2"])).rejects.toThrow(
+    await expect(adp.readAll("users", ["1", "2"], ctx())).rejects.toThrow(
       InternalError
     );
   });
@@ -117,7 +133,7 @@ describe("NanoAdapter core methods", () => {
       get: jest.fn().mockResolvedValue({ _rev: "9-a", a: 1 }),
       destroy: jest.fn().mockResolvedValue({ ok: true }),
     });
-    const r = await adp.delete("users", "1");
+    const r = await adp.delete("users", "1", ctx());
     expect((r as any)[PersistenceKeys.METADATA]).toBe("9-a");
   });
 
@@ -132,7 +148,7 @@ describe("NanoAdapter core methods", () => {
       }),
       bulk: bulkSpy,
     });
-    const res = await adp.deleteAll("users", ["1", "2"]);
+    const res = await adp.deleteAll("users", ["1", "2"], ctx());
     expect(res).toHaveLength(2);
     // verify we set _deleted flags in bulk call payload
     const arg = bulkSpy.mock.calls[0][0].docs;
@@ -145,9 +161,9 @@ describe("NanoAdapter core methods", () => {
     const adp = makeAdapter({
       find: jest.fn().mockResolvedValue({ docs: [1, 2], warning: "w" }),
     });
-    const docs = await adp.raw<any>({} as any, true);
+    const docs = await adp.raw<any>({} as any, true, ctx());
     expect(docs).toEqual([1, 2]);
-    const full = await adp.raw<any>({} as any, false);
+    const full = await adp.raw<any>({} as any, false, ctx());
     expect(full.docs).toEqual([1, 2]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -213,7 +229,7 @@ describe("NanoAdapter additional coverage", () => {
       ]),
     });
     const models = [{ a: 1 }, { b: 2 }];
-    const res = await adp.createAll("t", ["1", "2"], models);
+    const res = await adp.createAll("t", ["1", "2"], models, ctx());
     expect((res[0] as any)[PersistenceKeys.METADATA]).toBe("1-a");
     expect((res[1] as any)[PersistenceKeys.METADATA]).toBe("2-b");
   });
@@ -224,7 +240,7 @@ describe("NanoAdapter additional coverage", () => {
     });
     const m: any = {};
     Object.defineProperty(m, PersistenceKeys.METADATA, { value: "2-yy" });
-    const r = await adp.update("t", "1", m);
+    const r = await adp.update("t", "1", m, ctx());
     expect((r as any)[PersistenceKeys.METADATA]).toBe("3-zz");
   });
 
@@ -237,7 +253,7 @@ describe("NanoAdapter additional coverage", () => {
         ],
       }),
     });
-    const res = await adp.readAll("users", ["1", "2"]);
+    const res = await adp.readAll("users", ["1", "2"], ctx());
     expect((res[0] as any)[PersistenceKeys.METADATA]).toBe("1-a");
     expect((res[1] as any)[PersistenceKeys.METADATA]).toBe("2-b");
   });

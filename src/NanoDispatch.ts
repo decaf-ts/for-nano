@@ -1,11 +1,13 @@
-import { Adapter, Dispatch } from "@decaf-ts/core";
+import { Dispatch } from "@decaf-ts/core";
 import {
   DatabaseChangesResponse,
   DatabaseChangesResultItem,
   RequestError,
 } from "nano";
-import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
+import { Context, InternalError, OperationKeys } from "@decaf-ts/db-decorators";
 import { CouchDBAdapter, CouchDBKeys } from "@decaf-ts/for-couchdb";
+import { Model } from "@decaf-ts/decorator-validation";
+import { NanoFlags } from "./types";
 
 /**
  * @description Dispatcher for Nano database change events
@@ -93,12 +95,16 @@ export class NanoDispatch extends Dispatch<CouchDBAdapter<any, any, any>> {
   protected async changeHandler(
     error: RequestError | null,
     response: (DatabaseChangesResponse | DatabaseChangesResultItem)[] | string,
-    headers?: any
+    headers?: any,
+    ctxArg?: Context<NanoFlags>
   ) {
-    const { log, ctx } = Adapter.logCtx(
-      [error, response, headers],
-      this.changeHandler
-    );
+    const ctx = (ctxArg ||
+      this.adapter!.context(
+        OperationKeys.UPDATE,
+        {},
+        Model as any
+      )) as Context<NanoFlags>;
+    const log = ctx.logger.for(this.changeHandler);
     if (error) return log.error(`Error in change request: ${error}`);
     try {
       response = (

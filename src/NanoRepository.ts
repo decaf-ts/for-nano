@@ -1,5 +1,5 @@
 import { Model } from "@decaf-ts/decorator-validation";
-import { Repository } from "@decaf-ts/core";
+import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "./adapter";
 
 /**
@@ -10,4 +10,7 @@ import { NanoAdapter } from "./adapter";
  * @typedef {Repository<M, MangoQuery, NanoAdapter, NanoFlags, Context<NanoFlags>>} NanoRepository
  * @memberOf module:for-nano
  */
-export type NanoRepository<M extends Model> = Repository<M, NanoAdapter>;
+export type NanoRepository<M extends Model> = CouchDBRepository<
+  M,
+  NanoAdapter
+>;
