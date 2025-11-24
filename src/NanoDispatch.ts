@@ -2,10 +2,13 @@ import { Dispatch } from "@decaf-ts/core";
 import {
   DatabaseChangesResponse,
   DatabaseChangesResultItem,
+  DocumentScope,
   RequestError,
 } from "nano";
-import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
-import { CouchDBKeys } from "@decaf-ts/for-couchdb";
+import { Context, InternalError, OperationKeys } from "@decaf-ts/db-decorators";
+import { CouchDBAdapter, CouchDBKeys } from "@decaf-ts/for-couchdb";
+import { Model } from "@decaf-ts/decorator-validation";
+import { NanoConfig, NanoFlags } from "./types";
 
 /**
  * @description Dispatcher for Nano database change events
@@ -40,7 +43,9 @@ import { CouchDBKeys } from "@decaf-ts/for-couchdb";
  *   }
  *   Dispatch <|-- NanoDispatch
  */
-export class NanoDispatch extends Dispatch {
+export class NanoDispatch extends Dispatch<
+  CouchDBAdapter<NanoConfig, DocumentScope<any>, Context<NanoFlags>>
+> {
   private observerLastUpdate?: string;
   private attemptCounter: number = 0;
 
@@ -50,7 +55,7 @@ export class NanoDispatch extends Dispatch {
     super();
   }
 
-/**
+  /**
    * @description Closes the dispatcher
    * @summary Stops the dispatcher and cleans up any active subscriptions or resources
    * @return {Promise<void>} A promise that resolves when the dispatcher has been closed
@@ -96,7 +101,12 @@ export class NanoDispatch extends Dispatch {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     headers?: any
   ) {
-    const log = this.log.for(this.changeHandler);
+    const args: any[] = [error];
+    if (typeof response === "string") {
+      args.push(response);
+    } else args.push(response.map((r) => (r as any).results));
+    const { log, ctxArgs } = this.logCtx(args, this.changeHandler);
+
     if (error) return log.error(`Error in change request: ${error}`);
     try {
       response = (
@@ -169,12 +179,24 @@ export class NanoDispatch extends Dispatch {
           {}
         );
 
+      //
+      //   tableName,
+      //     bulkToSingle(toWrap),
+      //     ids as EventIds,
+      //     result,
+      // ...(ctxArgs.slice(argArray.length) as ContextualArgs<ContextOf<A>>)
+      //
       for (const table of Object.keys(changes)) {
+        const m = Model.get(table);
         for (const op of Object.keys(changes[table])) {
           try {
-            await this.updateObservers(table, op, [
-              ...changes[table][op].ids.values(),
-            ]);
+            await this.updateObservers(
+              (m || Model) as any,
+              op,
+              [...changes[table][op].ids.values()],
+              changes,
+              ...ctxArgs
+            );
             this.observerLastUpdate = changes[table][op].step;
             log.verbose(`Observer refresh dispatched by ${op} for ${table}`);
             log.debug(`pks: ${Array.from(changes[table][op].ids.values())}`);
@@ -230,7 +252,7 @@ export class NanoDispatch extends Dispatch {
         throw new InternalError(`No adapter/native observed for dispatch`);
       if (this.active) return;
       try {
-        (this.adapter as any).client.changes(
+        this.adapter.client.changes(
           {
             feed: "continuous",
             include_docs: false,

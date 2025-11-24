@@ -23,7 +23,7 @@ import {
 import { uses } from "@decaf-ts/decoration";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-export type AnyAdapter = Adapter<any, any, any, any, any>;
+export type AnyAdapter = Adapter<any, any, any, any>;
 let adapter: AnyAdapter;
 
 @uses("nano")
@@ -79,11 +79,7 @@ export class TestUserModel extends BaseModel {
 }
 
 @repository(TestUserModel)
-export class MethodQueryBuilderRepo extends Repository<
-  TestUserModel,
-  any,
-  any
-> {
+export class MethodQueryBuilderRepo extends Repository<TestUserModel, any> {
   constructor() {
     super(adapter, TestUserModel);
   }

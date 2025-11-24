@@ -5,6 +5,7 @@ import {
   onCreate,
   onCreateUpdate,
   OperationKeys,
+  PrimaryKeyType,
 } from "@decaf-ts/db-decorators";
 import "reflect-metadata";
 import {
@@ -145,7 +146,6 @@ export async function createdByOnNanoCreateUpdate<
 export class NanoAdapter extends CouchDBAdapter<
   NanoConfig,
   DocumentScope<any>,
-  NanoFlags,
   Context<NanoFlags>
 > {
   constructor(scope: NanoConfig, alias?: string) {
@@ -261,10 +261,11 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw InternalError
    *   end
    */
-  override async create(
-    tableName: string,
-    id: string | number,
-    model: Record<string, any>
+  override async create<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    model: Record<string, any>,
+    ...args: any[]
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
@@ -307,10 +308,11 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw parseError(e)
    *   end
    */
-  override async createAll(
-    tableName: string,
-    ids: string[] | number[],
-    models: Record<string, any>[]
+  override async createAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[],
+    models: Record<string, any>[],
+    ...args: []
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
@@ -356,11 +358,12 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw parseError(e)
    *   end
    */
-  override async read(
-    tableName: string,
-    id: string | number
+  override async read<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    ...args: any[]
   ): Promise<Record<string, any>> {
-    const _id = this.generateId(tableName, id);
+    const _id = this.generateId(Model.tableName(tableName), id);
     let record: DocumentGetResponse;
     try {
       record = await this.client.get(_id);
@@ -395,12 +398,13 @@ export class NanoAdapter extends CouchDBAdapter<
    *   end
    *   A-->>A: return documents with metadata
    */
-  override async readAll(
-    tableName: string,
-    ids: (string | number | bigint)[]
+  override async readAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[]
   ): Promise<Record<string, any>[]> {
+    const table = Model.tableName(tableName);
     const results = await this.client.fetch(
-      { keys: ids.map((id) => this.generateId(tableName, id as any)) },
+      { keys: ids.map((id) => this.generateId(table, id as any)) },
       {}
     );
     return results.rows.map((r) => {
@@ -437,10 +441,11 @@ export class NanoAdapter extends CouchDBAdapter<
    *     A-->>A: throw InternalError
    *   end
    */
-  override async update(
-    tableName: string,
-    id: string | number,
-    model: Record<string, any>
+  override async update<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType,
+    model: Record<string, any>,
+    ...args: any[]
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
@@ -464,10 +469,11 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {Promise<Array<Record<string, any>>>} models - Array of updated document data
    * @return {Promise<Promise<Array<Record<string, any>>>>} A promise that resolves to the updated documents with metadata
    */
-  override async updateAll(
-    tableName: string,
-    ids: string[] | number[],
-    models: Record<string, any>[]
+  override async updateAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[],
+    models: Record<string, any>[],
+    ...args: any[]
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
@@ -499,11 +505,11 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {string|number} id - The document identifier
    * @return {Promise<Record<string, any>>} A promise that resolves to the deleted document with metadata
    */
-  override async delete(
-    tableName: string,
-    id: string | number
+  override async delete<M extends Model>(
+    tableName: Constructor<M>,
+    id: PrimaryKeyType
   ): Promise<Record<string, any>> {
-    const _id = this.generateId(tableName, id);
+    const _id = this.generateId(Model.tableName(tableName), id);
     let record: DocumentGetResponse;
     try {
       record = await this.client.get(_id);
@@ -521,13 +527,15 @@ export class NanoAdapter extends CouchDBAdapter<
    * @param {Array<string|number|bigint>} ids - Array of document identifiers to delete
    * @return {Promise<Array<Record<string, any>>>} A promise resolving to the deleted documents with metadata
    */
-  override async deleteAll(
-    tableName: string,
-    ids: (string | number | bigint)[]
+  override async deleteAll<M extends Model>(
+    tableName: Constructor<M>,
+    ids: PrimaryKeyType[],
+    ...args: any[]
   ): Promise<Record<string, any>[]> {
-    const log = this.log.for(this.deleteAll);
+    const { log, ctx } = this.logCtx(args, this.deleteAll);
+    const table = Model.tableName(tableName);
     const results = await this.client.fetch(
-      { keys: ids.map((id) => this.generateId(tableName, id as any)) },
+      { keys: ids.map((id) => this.generateId(table, id as any)) },
       {}
     );
     const deletion: DocumentBulkResponse[] = await this.client.bulk({
@@ -555,9 +563,14 @@ export class NanoAdapter extends CouchDBAdapter<
    * @template R - The expected response or document array type
    * @param {MangoQuery} rawInput - The Mango query to execute
    * @param {boolean} [docsOnly=true] - Whether to return only the docs array or the full response
+   * @param {any[]} [args] - Whether to return only the docs array or the full response
    * @return {Promise<R>} A promise that resolves to the query result, shaped according to docsOnly
    */
-  override async raw<R>(rawInput: MangoQuery, docsOnly = true): Promise<R> {
+  override async raw<R>(
+    rawInput: MangoQuery,
+    docsOnly = true,
+    ...args: any[]
+  ): Promise<R> {
     try {
       const response: MangoResponse<R> = await this.client.find(rawInput);
       if (response.warning) this.log.for(this.raw).warn(response.warning);
