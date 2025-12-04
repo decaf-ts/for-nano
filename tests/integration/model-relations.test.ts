@@ -15,8 +15,7 @@ import {
 import { Model } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
-import { Condition, Sequence } from "@decaf-ts/core";
-import { Sequence as Seq } from "@decaf-ts/for-couchdb";
+import { Condition, Sequence, SequenceModel } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
@@ -57,7 +56,7 @@ describe(`Complex Database`, function () {
     await NanoAdapter.deleteDatabase(con, dbName);
   });
 
-  let sequenceRepository: NanoRepository<Seq>;
+  let sequenceRepository: NanoRepository<SequenceModel>;
   let userRepository: NanoRepository<TestUserModel>;
   let testDummyCountryModelRepository: NanoRepository<TestDummyCountry>;
   let testPhoneModelRepository: NanoRepository<TestPhoneModel>;
@@ -71,7 +70,7 @@ describe(`Complex Database`, function () {
   let model: any;
 
   beforeAll(async () => {
-    sequenceRepository = new CouchDBRepository(adapter, Seq);
+    sequenceRepository = new CouchDBRepository(adapter, SequenceModel);
     expect(sequenceRepository).toBeDefined();
 
     userRepository = new CouchDBRepository(adapter, TestUserModel);
