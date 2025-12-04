@@ -4,6 +4,9 @@
 
 A lightweight adapter layer and utilities to use CouchDB via the Nano client within the decaf-ts ecosystem. It provides a NanoAdapter with repository-friendly CRUD, bulk operations, indexing, user/database management helpers, and a change feed dispatcher, plus typed flags and configuration for ergonomic, testable data access.
 
+> Release docs refreshed on 2025-11-26. See [workdocs/reports/RELEASE_NOTES.md](./workdocs/reports/RELEASE_NOTES.md) for ticket summaries.
+
+
 ![Licence](https://img.shields.io/github/license/decaf-ts/for-nano.svg?style=plastic)
 ![GitHub language count](https://img.shields.io/github/languages/count/decaf-ts/for-nano?style=plastic)
 ![GitHub top language](https://img.shields.io/github/languages/top/decaf-ts/for-nano?style=plastic)
@@ -284,6 +287,9 @@ await NanoAdapter.createDatabase(url, "mydb");
   - strategy;
   - builder;
   - etc;
+
+## Release Documentation Hooks
+Stay aligned with the automated release pipeline by reviewing [Release Notes](./workdocs/reports/RELEASE_NOTES.md) and [Dependencies](./workdocs/reports/DEPENDENCIES.md) after trying these recipes (updated on 2025-11-26).
 
 
 ### Related

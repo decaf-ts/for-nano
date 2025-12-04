@@ -1,4 +1,4 @@
-import { Metadata, uses } from "@decaf-ts/decoration";
+import { uses } from "@decaf-ts/decoration";
 import { RamAdapter, RamFlavour, Adapter } from "@decaf-ts/core";
 RamAdapter.decoration();
 Adapter.setCurrent(RamFlavour);
@@ -58,6 +58,7 @@ jest.setTimeout(50000);
 
 describe("Adapter Integration", () => {
   let con: ServerScope;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let adapter: NanoAdapter;
   // let repo: NanoRepository<TestModel>;
 
@@ -78,6 +79,7 @@ describe("Adapter Integration", () => {
     });
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let observer: Observer;
   let mock: any;
   beforeEach(() => {
@@ -101,16 +103,10 @@ describe("Adapter Integration", () => {
     await NanoAdapter.deleteDatabase(con, dbName);
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let ram1: RamAdapter;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let ram2: NanoAdapter;
-
-  it("displays the correct decoration for model1", () => {
-    const meta1 = Metadata.get(Model1);
-    const meta2 = Metadata.get(Model2);
-    //
-    // expect(meta1.operations.owner1.on.create.handlers.Model1.owner1);
-    // console.log(meta1);
-  });
 
   it("initializes adapters correctly", () => {
     ram1 = new RamAdapter();
