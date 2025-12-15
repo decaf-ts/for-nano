@@ -1,4 +1,4 @@
-import { RepositoryFlags } from "@decaf-ts/db-decorators";
+import { AdapterFlags } from "@decaf-ts/core";
 
 /**
  * @description Configuration flags for Nano database operations
@@ -6,7 +6,7 @@ import { RepositoryFlags } from "@decaf-ts/db-decorators";
  * @interface NanoFlags
  * @memberOf module:for-nano
  */
-export interface NanoFlags extends RepositoryFlags {
+export interface NanoFlags extends AdapterFlags {
   /**
    * @description User authentication information for Nano database connections
    */

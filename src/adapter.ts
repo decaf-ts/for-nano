@@ -1,6 +1,5 @@
 import {
   ConflictError,
-  Context,
   InternalError,
   onCreate,
   onCreateUpdate,
@@ -30,10 +29,11 @@ import { NanoConfig, NanoFlags } from "./types";
 import {
   Adapter,
   ContextualArgs,
-  FlagsOf,
   PersistenceKeys,
   RelationsMetadata,
   UnsupportedError,
+  Context,
+  Dispatch,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
@@ -144,9 +144,11 @@ export async function createdByOnNanoCreateUpdate<
  *   }
  *   CouchDBAdapter <|-- NanoAdapter
  */
-export class NanoAdapter<
-  C extends Context<NanoFlags> = Context<NanoFlags>,
-> extends CouchDBAdapter<NanoConfig, DocumentScope<any>, C> {
+export class NanoAdapter extends CouchDBAdapter<
+  NanoConfig,
+  DocumentScope<any>,
+  Context<NanoFlags>
+> {
   constructor(scope: NanoConfig, alias?: string) {
     super(scope, NanoFlavour, alias);
   }
@@ -184,13 +186,13 @@ export class NanoAdapter<
   protected override async flags<M extends Model>(
     operation: OperationKeys,
     model: Constructor<M>,
-    flags: Partial<FlagsOf<C>>
-  ): Promise<FlagsOf<C>> {
+    flags: Partial<NanoFlags>
+  ): Promise<NanoFlags> {
     return Object.assign(await super.flags(operation, model, flags), {
       user: {
         name: this.config.user,
       },
-    }) as FlagsOf<C>;
+    });
   }
 
   /**
@@ -265,7 +267,7 @@ export class NanoAdapter<
     id: PrimaryKeyType,
     model: Record<string, any>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
@@ -313,7 +315,7 @@ export class NanoAdapter<
     ids: PrimaryKeyType[],
     models: Record<string, any>[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
@@ -363,7 +365,7 @@ export class NanoAdapter<
     tableName: Constructor<M>,
     id: PrimaryKeyType,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>> {
     const _id = this.generateId(Model.tableName(tableName), id);
     let record: DocumentGetResponse;
@@ -404,7 +406,7 @@ export class NanoAdapter<
     tableName: Constructor<M>,
     ids: (string | number | bigint)[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>[]> {
     const table = Model.tableName(tableName);
     const results = await this.client.fetch(
@@ -450,7 +452,7 @@ export class NanoAdapter<
     id: PrimaryKeyType,
     model: Record<string, any>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>> {
     let response: DocumentInsertResponse;
     try {
@@ -479,7 +481,7 @@ export class NanoAdapter<
     ids: PrimaryKeyType[],
     models: Record<string, any>[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>[]> {
     let response: DocumentBulkResponse[];
     try {
@@ -515,7 +517,7 @@ export class NanoAdapter<
     tableName: Constructor<M>,
     id: PrimaryKeyType,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>> {
     const _id = this.generateId(Model.tableName(tableName), id);
     let record: DocumentGetResponse;
@@ -539,7 +541,7 @@ export class NanoAdapter<
     tableName: Constructor<M>,
     ids: PrimaryKeyType[],
 
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>[]> {
     const { log } = this.logCtx(args, this.deleteAll);
     const table = Model.tableName(tableName);
@@ -577,7 +579,7 @@ export class NanoAdapter<
   override async raw<R>(
     rawInput: MangoQuery,
     docsOnly = true,
-    ...args: ContextualArgs<C>
+    ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<R> {
     try {
       const response: MangoResponse<R> = await this.client.find(rawInput);

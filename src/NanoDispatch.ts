@@ -1,13 +1,14 @@
-import { Dispatch } from "@decaf-ts/core";
+import { Adapter, Context, Dispatch } from "@decaf-ts/core";
 import {
   DatabaseChangesResponse,
   DatabaseChangesResultItem,
+  DocumentScope,
   RequestError,
 } from "nano";
-import { Context, InternalError, OperationKeys } from "@decaf-ts/db-decorators";
-import { CouchDBAdapter, CouchDBKeys } from "@decaf-ts/for-couchdb";
+import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
+import { CouchDBKeys, MangoQuery } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
-import { NanoFlags } from "./types";
+import { NanoConfig, NanoFlags } from "./types";
 
 /**
  * @description Dispatcher for Nano database change events
@@ -42,7 +43,9 @@ import { NanoFlags } from "./types";
  *   }
  *   Dispatch <|-- NanoDispatch
  */
-export class NanoDispatch extends Dispatch<CouchDBAdapter<any, any, any>> {
+export class NanoDispatch extends Dispatch<
+  Adapter<NanoConfig, DocumentScope<any>, MangoQuery, Context<NanoFlags>>
+> {
   private observerLastUpdate?: string;
   private attemptCounter: number = 0;
 
