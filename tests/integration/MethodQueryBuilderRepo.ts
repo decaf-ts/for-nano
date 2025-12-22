@@ -209,7 +209,7 @@ export class MethodQueryBuilderRepo extends Repository<TestUserModel, any> {
   }
 
   @query()
-  findByActiveOrderByNameAsc(
+  findByActiveOrderByName(
     active: boolean,
     orderBy?: OrderBySelector<any>[],
     limit?: number,
