@@ -544,27 +544,38 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<Record<string, any>[]> {
     const { log } = this.logCtx(args, this.deleteAll);
     const table = Model.tableName(tableName);
+    const keys = ids.map((id) => this.generateId(table, id as any));
     const results = await this.client.fetch(
-      { keys: ids.map((id) => this.generateId(table, id as any)) },
-      {}
+      { keys },
+      { include_docs: true }
     );
+
+    const docs = results.rows.map((row, index) => {
+      if ((row as any).error) throw new InternalError((row as any).error);
+      if (!(row as any).doc)
+        throw new InternalError(
+          `Unable to load document ${(row as any).id ?? keys[index]}`
+        );
+      return Object.assign({}, (row as any).doc);
+    });
+
     const deletion: DocumentBulkResponse[] = await this.client.bulk({
-      docs: results.rows.map((r) => {
-        (r as any)[CouchDBKeys.DELETED] = true;
-        return r;
-      }),
+      docs: docs.map((doc) => ({
+        _id: doc[CouchDBKeys.ID],
+        _rev: doc[CouchDBKeys.REV],
+        [CouchDBKeys.DELETED]: true,
+      })),
     });
-    deletion.forEach((d: DocumentBulkResponse) => {
-      if (d.error) log.error(d.error);
+    deletion.forEach((d: DocumentBulkResponse, index: number) => {
+      if (d.error)
+        log.error(
+          `Failed to delete document ${docs[index][CouchDBKeys.ID]}: ${d.error} ${d.reason ? `- ${d.reason}` : ""}`
+        );
     });
-    return results.rows.map((r) => {
-      if ((r as any).error) throw new InternalError((r as any).error);
-      if ((r as any).doc) {
-        const res = Object.assign({}, (r as any).doc);
-        return this.assignMetadata(res, (r as any).doc[CouchDBKeys.REV]);
-      }
-      throw new InternalError("Should be impossible");
-    });
+
+    return docs.map((doc) =>
+      this.assignMetadata({ ...doc }, doc[CouchDBKeys.REV] as string)
+    );
   }
 
   /**
