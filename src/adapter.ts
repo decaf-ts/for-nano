@@ -168,8 +168,8 @@ export class NanoAdapter extends CouchDBAdapter<
    * @return {DocumentScope<any>} The ready-to-use Nano DocumentScope for the configured database
    */
   protected getClient() {
-    const { user, password, host, dbName } = this.config;
-    const con = NanoAdapter.connect(user, password, host);
+    const { user, password, host, dbName, protocol } = this.config;
+    const con = NanoAdapter.connect(user, password, host, protocol);
     return wrapDocumentScope(con, dbName, user, password);
   }
 
@@ -545,10 +545,7 @@ export class NanoAdapter extends CouchDBAdapter<
     const { log } = this.logCtx(args, this.deleteAll);
     const table = Model.tableName(tableName);
     const keys = ids.map((id) => this.generateId(table, id as any));
-    const results = await this.client.fetch(
-      { keys },
-      { include_docs: true }
-    );
+    const results = await this.client.fetch({ keys }, { include_docs: true });
 
     const docs = results.rows.map((row, index) => {
       if ((row as any).error) throw new InternalError((row as any).error);

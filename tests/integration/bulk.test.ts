@@ -42,6 +42,7 @@ describe("Bulk operations", () => {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
   });
 

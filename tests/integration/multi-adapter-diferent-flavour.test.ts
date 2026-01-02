@@ -76,6 +76,7 @@ describe("Adapter Integration", () => {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
   });
 

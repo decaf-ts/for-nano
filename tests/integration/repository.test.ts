@@ -37,6 +37,7 @@ describe("repositories", () => {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
   });
 

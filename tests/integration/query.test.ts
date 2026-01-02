@@ -14,6 +14,7 @@ const adapter = new NanoAdapter({
   password: user_password,
   host: dbHost,
   dbName: dbName,
+  protocol: "http",
 });
 
 import {

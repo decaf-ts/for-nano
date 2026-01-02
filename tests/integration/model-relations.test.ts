@@ -49,6 +49,7 @@ describe(`Complex Database`, function () {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
   });
 

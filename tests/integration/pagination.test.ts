@@ -40,6 +40,7 @@ describe(`Pagination`, function () {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
     repo = new CouchDBRepository(adapter, TestCountryModel);
     const models = Object.keys(new Array(size).fill(0)).map(

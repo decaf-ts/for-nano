@@ -37,7 +37,9 @@ describe("Adapter Integration", () => {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
+    await adapter.initialize();
     repo = new CouchDBRepository(adapter, TestModel);
   });
 
@@ -107,9 +109,9 @@ describe("Adapter Integration", () => {
 
     expect(updated).toBeDefined();
     expect(updated.equals(created)).toEqual(false);
-    expect(
-      updated.equals(created, "updatedAt", "updatedOn", "name")
-    ).toEqual(true); // minus the expected changes
+    expect(updated.equals(created, "updatedAt", "updatedOn", "name")).toEqual(
+      true
+    ); // minus the expected changes
     const metadata = (updated as any)[PersistenceKeys.METADATA];
     expect(metadata).toBeDefined();
   });

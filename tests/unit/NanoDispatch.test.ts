@@ -1,6 +1,7 @@
 import { Context, OperationKeys } from "@decaf-ts/db-decorators";
 import { NanoDispatch } from "../../src/NanoDispatch";
 import { CouchDBKeys } from "@decaf-ts/for-couchdb";
+import { MaybeContextualArg } from "@decaf-ts/core";
 
 class TestDispatch extends NanoDispatch {
   public calls: Array<{ table: string; op: string; ids: any[] }> = [];
@@ -13,12 +14,20 @@ class TestDispatch extends NanoDispatch {
     const ctx = Context.factory({
       operation: OperationKeys.UPDATE,
     } as any);
-    return (this.changeHandler as any).call(this, error, response, headers, ctx);
+    return (this.changeHandler as any).call(
+      this,
+      error,
+      response,
+      headers,
+      ctx
+    );
   }
   override async updateObservers(
     table: string,
     operation: string,
-    ids: any[]
+    ids: any[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: MaybeContextualArg<any>
   ): Promise<void> {
     this.calls.push({ table, op: operation, ids });
   }

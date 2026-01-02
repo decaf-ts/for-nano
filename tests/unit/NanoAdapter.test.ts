@@ -1,11 +1,7 @@
-import {
-  Context,
-  InternalError,
-  OperationKeys,
-} from "@decaf-ts/db-decorators";
+import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src/adapter";
 import { CouchDBKeys } from "@decaf-ts/for-couchdb";
-import { PersistenceKeys } from "@decaf-ts/core";
+import { PersistenceKeys, Context } from "@decaf-ts/core";
 import { Logging } from "@decaf-ts/logging";
 
 function makeAdapter(overrides: any = {}) {

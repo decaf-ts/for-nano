@@ -37,4 +37,5 @@ export type NanoConfig = {
   password: string;
   host: string;
   dbName: string;
+  protocol: "http" | "https";
 };

@@ -35,6 +35,7 @@ describe("Nano MethodQueryBuilder Decorator", () => {
       password: user_password,
       host: dbHost,
       dbName: dbName,
+      protocol: "http",
     });
 
     userRepo = getRepo(adapter);
