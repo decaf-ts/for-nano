@@ -1,7 +1,8 @@
 import { Metadata } from "@decaf-ts/decoration";
 import { TestCountryModel } from "./models";
 console.log(`before all: ${Metadata.flavourOf(TestCountryModel)}`);
-import { Adapter, RamAdapter, RamFlavour } from "@decaf-ts/core";
+import { Adapter } from "@decaf-ts/core";
+import { RamAdapter, RamFlavour } from "@decaf-ts/core/ram";
 RamAdapter.decoration();
 Adapter.setCurrent(RamFlavour);
 
@@ -13,7 +14,6 @@ import { Model } from "@decaf-ts/decorator-validation";
 import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter, NanoFlavour } from "../../src";
 import { NanoRepository } from "../../src";
-import { TestCountryModel } from "./models";
 console.log(`After nano: ${Metadata.flavourOf(TestCountryModel)}`);
 
 const admin = "couchdb.admin";

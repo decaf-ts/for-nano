@@ -1,5 +1,6 @@
 import { uses } from "@decaf-ts/decoration";
-import { RamAdapter, RamFlavour, Adapter } from "@decaf-ts/core";
+import { Adapter } from "@decaf-ts/core";
+import { RamAdapter, RamFlavour } from "@decaf-ts/core/ram";
 RamAdapter.decoration();
 Adapter.setCurrent(RamFlavour);
 

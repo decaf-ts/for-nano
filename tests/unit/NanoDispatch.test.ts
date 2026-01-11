@@ -1,7 +1,8 @@
-import { Context, OperationKeys } from "@decaf-ts/db-decorators";
+import { OperationKeys } from "@decaf-ts/db-decorators";
 import { NanoDispatch } from "../../src/NanoDispatch";
 import { CouchDBKeys } from "@decaf-ts/for-couchdb";
-import { MaybeContextualArg } from "@decaf-ts/core";
+import { Context, MaybeContextualArg } from "@decaf-ts/core";
+import { Logging } from "@decaf-ts/logging";
 
 class TestDispatch extends NanoDispatch {
   public calls: Array<{ table: string; op: string; ids: any[] }> = [];
@@ -11,8 +12,9 @@ class TestDispatch extends NanoDispatch {
   }
   // expose for testing
   public async runChangeHandler(error: any, response: any, headers?: any) {
-    const ctx = Context.factory({
+    const ctx = new Context().accumulate({
       operation: OperationKeys.UPDATE,
+      logger: Logging.get(),
     } as any);
     return (this.changeHandler as any).call(
       this,

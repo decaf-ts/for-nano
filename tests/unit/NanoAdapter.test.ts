@@ -22,7 +22,7 @@ function makeAdapter(overrides: any = {}) {
 }
 
 function ctx() {
-  return Context.factory({
+  return new Context().accumulate({
     logger: Logging.get(),
     operation: OperationKeys.CREATE,
   } as any);
