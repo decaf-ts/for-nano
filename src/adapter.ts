@@ -33,6 +33,7 @@ import {
   RelationsMetadata,
   UnsupportedError,
   Context,
+  ContextOf,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
@@ -71,14 +72,14 @@ export async function createdByOnNanoCreateUpdate<
   V extends RelationsMetadata,
 >(
   this: R,
-  context: Context<NanoFlags>,
+  context: ContextOf<R>,
   data: V,
   key: keyof M,
   model: M
 ): Promise<void> {
   try {
     const user = context.get("user");
-    model[key] = user.name as M[typeof key];
+    model[key] = (user.name || user) as M[typeof key];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e: unknown) {
     throw new UnsupportedError(
@@ -185,13 +186,22 @@ export class NanoAdapter extends CouchDBAdapter<
   protected override async flags<M extends Model>(
     operation: OperationKeys,
     model: Constructor<M>,
-    flags: Partial<NanoFlags>
+    flags: Partial<NanoFlags>,
+    ...args: any[]
   ): Promise<NanoFlags> {
-    return Object.assign(await super.flags(operation, model, flags), {
-      user: {
-        name: this.config.user,
-      },
-    });
+    return super.flags(
+      operation,
+      model,
+      Object.assign(
+        {
+          user: {
+            name: this.config.user,
+          },
+        },
+        flags,
+        ...args
+      )
+    );
   }
 
   /**
