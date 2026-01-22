@@ -1,6 +1,8 @@
 import { Model } from "@decaf-ts/decorator-validation";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "./adapter";
+import { Constructor } from "@decaf-ts/decoration";
+import { ContextOf, FlagsOf } from "@decaf-ts/core";
 
 /**
  * @description Type for Nano database repositories
@@ -10,7 +12,15 @@ import { NanoAdapter } from "./adapter";
  * @typedef {Repository<M, MangoQuery, NanoAdapter, NanoFlags, Context<NanoFlags>>} NanoRepository
  * @memberOf module:for-nano
  */
-export type NanoRepository<M extends Model> = CouchDBRepository<
+export class NanoRepository<M extends Model> extends CouchDBRepository<
   M,
   NanoAdapter
->;
+> {
+  constructor(adapter: NanoAdapter, model: Constructor<M>) {
+    super(adapter, model);
+  }
+
+  override override(flags: Partial<FlagsOf<ContextOf<NanoAdapter>>>): this {
+    return super.override(flags).for(flags as unknown as never);
+  }
+}

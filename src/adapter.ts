@@ -34,6 +34,7 @@ import {
   UnsupportedError,
   Context,
   ContextOf,
+  Repository,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
@@ -211,6 +212,15 @@ export class NanoAdapter extends CouchDBAdapter<
    */
   protected override Dispatch(): NanoDispatch {
     return new NanoDispatch();
+  }
+
+  override repository<
+    R extends Repository<
+      any,
+      Adapter<NanoConfig, DocumentScope<any>, MangoQuery, Context<NanoFlags>>
+    >,
+  >(): Constructor<R> {
+    return NanoRepository as unknown as Constructor<R>;
   }
 
   /**
