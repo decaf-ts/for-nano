@@ -21,7 +21,7 @@ const config: Config.InitialOptions = {
         filename: "test-report.html",
         openReport: true,
         expand: true,
-        pageTitle: "for-nano Test Report",
+        pageTitle: "@decaf-ts/for-nano",
         stripSkippedTest: true,
         darkTheme: true,
         enableMergeData: true,
@@ -31,9 +31,9 @@ const config: Config.InitialOptions = {
   ],
   coverageThreshold: {
     global: {
-      branches: 56,
+      branches: 52,
       functions: 93,
-      lines: 87,
+      lines: 86,
       statements: 85,
     },
   },

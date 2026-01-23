@@ -11,6 +11,7 @@ import {
   CouchDBKeys,
   CreateIndexRequest,
   generateIndexes,
+  generateViews,
   MangoQuery,
   MangoResponse,
   wrapDocumentScope,
@@ -254,6 +255,23 @@ export class NanoAdapter extends CouchDBAdapter<
       const { result, id, name } = res;
       if (result === "existing")
         throw new ConflictError(`Index for table ${name} with id ${id}`);
+    }
+
+    const views = generateViews(models);
+    for (const view of views) {
+      try {
+        await this.client.insert(view as any);
+      } catch (e: any) {
+        if (e?.statusCode === 409 || e?.error === "conflict") {
+          const existing = await this.client.get(view._id);
+          await this.client.insert({
+            ...view,
+            _rev: existing._rev,
+          } as any);
+        } else {
+          throw e;
+        }
+      }
     }
   }
 
