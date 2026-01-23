@@ -1,5 +1,12 @@
 import { ServerScope } from "nano";
-import { BaseModel, Condition, OrderDirection, pk, table } from "@decaf-ts/core";
+import {
+  BaseModel,
+  Condition,
+  OrderDirection,
+  pk,
+  table,
+  view,
+} from "@decaf-ts/core";
 import {
   list,
   model,
@@ -17,7 +24,6 @@ import {
   max,
   min,
   sum,
-  view,
 } from "@decaf-ts/for-couchdb";
 import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
@@ -186,7 +192,9 @@ describe("Views Integration", () => {
     expect(authDoc.views.by_status_admin_obj.map).toContain("roles");
     expect(authDoc.views.by_status_admin_obj.map).toContain("admin");
     const customDoc = await adapter.client.get("_design/custom_ddoc");
-    expect(Object.keys(customDoc.views || {})).toContain("by_status_custom_map");
+    expect(Object.keys(customDoc.views || {})).toContain(
+      "by_status_custom_map"
+    );
     repo = new CouchDBRepository(adapter, ViewTestModel);
   });
 

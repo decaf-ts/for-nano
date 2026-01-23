@@ -13,6 +13,7 @@ import {
   index,
   oneToMany,
   oneToOne,
+  OrderDirection,
   pk,
 } from "@decaf-ts/core";
 import { prop } from "@decaf-ts/decoration";
@@ -20,6 +21,7 @@ import { prop } from "@decaf-ts/decoration";
 @model()
 export class TestCountryModel extends BaseModel {
   @pk({ type: Number })
+  @index([OrderDirection.ASC, OrderDirection.DSC])
   id!: number;
 
   @required()
