@@ -32,11 +32,15 @@ const dbHost = "localhost:10010";
 
 Model.setBuilder(Model.fromModel);
 
+function serializeCondition<T>(condition: Condition<T>) {
+  return JSON.parse(JSON.stringify(condition));
+}
+
 @uses(NanoFlavour)
 @table("view_test")
 @model()
 class ViewTestModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()
@@ -69,6 +73,21 @@ class ViewTestModel extends BaseModel {
   })
   @groupBy({ name: "group_by_status", ddoc: "view_ddoc" })
   @count({ name: "count_active", ddoc: "agg_ddoc", value: "active" })
+  @count({
+    name: "count_category_a",
+    ddoc: "agg_ddoc",
+    condition: serializeCondition(
+      Condition.attribute<ViewTestModel>("category").eq("a")
+    ),
+  })
+  @count({
+    name: "count_active_docs",
+    ddoc: "agg_ddoc",
+    returnDocs: true,
+    condition: serializeCondition(
+      Condition.attribute<ViewTestModel>("status").eq("active")
+    ),
+  })
   @distinct({ name: "distinct_status", ddoc: "agg_ddoc" })
   status!: string;
 
@@ -79,12 +98,41 @@ class ViewTestModel extends BaseModel {
     compositions: ["status"],
     directions: [OrderDirection.ASC, OrderDirection.DSC],
   })
+  @distinct({
+    name: "distinct_category_a_docs",
+    ddoc: "agg_ddoc",
+    returnDocs: true,
+    condition: serializeCondition(
+      Condition.attribute<ViewTestModel>("category").eq("a")
+    ),
+  })
   category!: string;
 
   @required()
   @sum({ name: "sum_amount", ddoc: "agg_ddoc" })
+  @sum({
+    name: "sum_active_amount",
+    ddoc: "agg_ddoc",
+    condition: serializeCondition(
+      Condition.attribute<ViewTestModel>("status").eq("active")
+    ),
+  })
   @max({ name: "max_amount", ddoc: "agg_ddoc" })
+  @max({
+    name: "max_category_b",
+    ddoc: "agg_ddoc",
+    condition: serializeCondition(
+      Condition.attribute<ViewTestModel>("category").eq("b")
+    ),
+  })
   @min({ name: "min_amount", ddoc: "agg_ddoc" })
+  @min({
+    name: "min_category_a",
+    ddoc: "agg_ddoc",
+    condition: serializeCondition(
+      Condition.attribute<ViewTestModel>("category").eq("a")
+    ),
+  })
   amount!: number;
 
   @prop()
@@ -180,6 +228,23 @@ describe("Views Integration", () => {
     });
     expect(countActive.rows[0].value).toBe(2);
 
+    const countCategoryA = await adapter.client.view(
+      "agg_ddoc",
+      "count_category_a",
+      { reduce: true }
+    );
+    expect(countCategoryA.rows[0].value).toBe(2);
+
+    const countActiveDocs = await adapter.client.view(
+      "agg_ddoc",
+      "count_active_docs",
+      { reduce: false }
+    );
+    expect(countActiveDocs.rows).toHaveLength(2);
+    expect(
+      countActiveDocs.rows.every((r: any) => r.value.status === "active")
+    ).toBe(true);
+
     const distinctStatus = await adapter.client.view(
       "agg_ddoc",
       "distinct_status",
@@ -207,15 +272,36 @@ describe("Views Integration", () => {
     });
     expect(sumAmount.rows[0].value).toBe(22);
 
+    const sumActiveAmount = await adapter.client.view(
+      "agg_ddoc",
+      "sum_active_amount",
+      { reduce: true }
+    );
+    expect(sumActiveAmount.rows[0].value).toBe(17);
+
     const maxAmount = await adapter.client.view("agg_ddoc", "max_amount", {
       reduce: true,
     });
     expect(maxAmount.rows[0].value).toBe(10);
 
+    const maxCategoryB = await adapter.client.view(
+      "agg_ddoc",
+      "max_category_b",
+      { reduce: true }
+    );
+    expect(maxCategoryB.rows[0].value).toBe(7);
+
     const minAmount = await adapter.client.view("agg_ddoc", "min_amount", {
       reduce: true,
     });
     expect(minAmount.rows[0].value).toBe(5);
+
+    const minCategoryA = await adapter.client.view(
+      "agg_ddoc",
+      "min_category_a",
+      { reduce: true }
+    );
+    expect(minCategoryA.rows[0].value).toBe(5);
 
     const byStatusDocs = await adapter.client.view(
       "view_ddoc",
@@ -247,5 +333,17 @@ describe("Views Integration", () => {
       {}
     );
     expect(customSum).toEqual({ active: 17, inactive: 5 });
+
+    const distinctCategoryDocs = await adapter.client.view(
+      "agg_ddoc",
+      "distinct_category_a_docs",
+      { reduce: false }
+    );
+    expect(distinctCategoryDocs.rows).toHaveLength(2);
+    expect(
+      distinctCategoryDocs.rows.every(
+        (r: any) => r.value.category === "a" && r.value.status
+      )
+    ).toBe(true);
   });
 });

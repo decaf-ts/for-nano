@@ -53,7 +53,7 @@ describe("Bulk operations", () => {
   @uses("nano")
   @model()
   class TestBulkModel extends BaseModel {
-    @pk({ type: "Number" })
+    @pk({ type: Number })
     id?: number = undefined;
 
     @required()

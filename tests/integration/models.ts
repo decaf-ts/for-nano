@@ -19,7 +19,7 @@ import { prop } from "@decaf-ts/decoration";
 
 @model()
 export class TestCountryModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()
@@ -39,7 +39,7 @@ export class TestCountryModel extends BaseModel {
 
 @model()
 export class TestAddressModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()
@@ -71,7 +71,7 @@ export class TestAddressModel extends BaseModel {
 
 @model()
 export class TestPhoneModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()
@@ -87,7 +87,7 @@ export class TestPhoneModel extends BaseModel {
 
 @model()
 export class TestUserModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()
@@ -126,7 +126,7 @@ export class TestUserModel extends BaseModel {
 
 @model()
 export class TestDummyCountry extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()
@@ -142,7 +142,7 @@ export class TestDummyCountry extends BaseModel {
 
 @model()
 export class NoPopulateOnceModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @oneToOne(
@@ -160,7 +160,7 @@ export class NoPopulateOnceModel extends BaseModel {
 
 @model()
 export class TestDummyPhone extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
   @required()
   areaCode!: string;
@@ -174,7 +174,7 @@ export class TestDummyPhone extends BaseModel {
 
 @model()
 export class NoPopulateManyModel extends BaseModel {
-  @pk({ type: "Number" })
+  @pk({ type: Number })
   id!: number;
 
   @required()

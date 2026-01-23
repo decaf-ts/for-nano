@@ -190,7 +190,7 @@ describe(`Complex Database`, function () {
       it("Ensure no population when populate is disabled in a one-to-one relation", async () => {
         const sequenceModel = await adapter.Sequence({
           name: Model.sequenceName(NoPopulateOnceModel, "pk"),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,
@@ -198,7 +198,7 @@ describe(`Complex Database`, function () {
 
         const sequenceCountry = await adapter.Sequence({
           name: Model.sequenceName(TestDummyCountry, "pk"),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,
@@ -236,7 +236,7 @@ describe(`Complex Database`, function () {
       it("Creates a one to one relation", async () => {
         sequenceModel = await adapter.Sequence({
           name: Sequence.pk(TestAddressModel),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,
@@ -244,7 +244,7 @@ describe(`Complex Database`, function () {
 
         sequenceCountry = await adapter.Sequence({
           name: Sequence.pk(TestCountryModel),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,
@@ -407,7 +407,7 @@ describe(`Complex Database`, function () {
 
         const sequencePhone = await adapter.Sequence({
           name: Sequence.pk(TestDummyPhone),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,
@@ -445,7 +445,7 @@ describe(`Complex Database`, function () {
       it("Creates a one to many relation", async () => {
         userSequence = await adapter.Sequence({
           name: Sequence.pk(TestUserModel),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,
@@ -453,7 +453,7 @@ describe(`Complex Database`, function () {
 
         const phoneSequence = await adapter.Sequence({
           name: Sequence.pk(TestPhoneModel),
-          type: "Number",
+          type: Number,
           startWith: 0,
           incrementBy: 1,
           cycle: false,

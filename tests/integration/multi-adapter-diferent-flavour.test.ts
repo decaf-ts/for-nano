@@ -18,7 +18,7 @@ import { ConflictError } from "@decaf-ts/db-decorators";
 @uses(RamFlavour)
 @model()
 class Model1 extends Model {
-  @pk({ type: "Number", generated: true })
+  @pk({ type: Number, generated: true })
   id1!: number;
 
   @required()
@@ -34,7 +34,7 @@ class Model1 extends Model {
 @uses(NanoFlavour)
 @model()
 class Model2 extends Model {
-  @pk({ type: "Number", generated: true })
+  @pk({ type: Number, generated: true })
   id2!: number;
 
   @required()
