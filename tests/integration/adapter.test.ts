@@ -3,16 +3,10 @@ import { Observer, PersistenceKeys } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
 import { TestModel } from "../TestModel";
-import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
+import { NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "test_db";
-const dbHost = "localhost:10010";
+import { createNanoTestResources } from "../helpers/nano";
 
 Model.setBuilder(Model.fromModel);
 
@@ -22,22 +16,17 @@ describe("Adapter Integration", () => {
   let con: ServerScope;
   let adapter: NanoAdapter;
   let repo: NanoRepository<TestModel>;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
-    con = await NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("adapter");
+    con = resources.connection;
     adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
-      protocol: "http",
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
     });
     await adapter.initialize();
     repo = new CouchDBRepository(adapter, TestModel);
@@ -63,7 +52,7 @@ describe("Adapter Integration", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await NanoAdapter.deleteDatabase(con, resources.dbName);
   });
 
   let created: TestModel, updated: TestModel;

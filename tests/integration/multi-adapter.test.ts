@@ -11,17 +11,11 @@ import { ServerScope } from "nano";
 import { Observer, PersistenceKeys } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
-import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
+import { NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter, NanoFlavour } from "../../src";
 import { NanoRepository } from "../../src";
+import { setupNanoAdapter } from "../helpers/nanoSetup";
 console.log(`After nano: ${Metadata.flavourOf(TestCountryModel)}`);
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "test_db_multi";
-const dbHost = "localhost:10010";
 
 Model.setBuilder(Model.fromModel);
 
@@ -31,24 +25,13 @@ describe("multi adapter", () => {
   let con: ServerScope;
   let adapter: NanoAdapter;
   let repo: NanoRepository<TestCountryModel>;
+  let setupData: Awaited<ReturnType<typeof setupNanoAdapter>>;
 
   beforeAll(async () => {
     expect(Metadata.flavourOf(TestCountryModel)).toEqual(NanoFlavour);
-    con = await NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
-    adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
-      protocol: "http",
-    });
+    setupData = await setupNanoAdapter("multi_adapter");
+    adapter = setupData.adapter;
+    con = setupData.resources.connection;
     repo = new CouchDBRepository(adapter, TestCountryModel);
   });
 
@@ -72,7 +55,7 @@ describe("multi adapter", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await NanoAdapter.deleteDatabase(con, setupData.resources.dbName);
   });
 
   let created: TestCountryModel, updated: TestCountryModel;

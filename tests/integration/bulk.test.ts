@@ -8,16 +8,10 @@ import {
   required,
 } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
-import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
+import { NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "bulk_db";
-const dbHost = "localhost:10010";
+import { createNanoTestResources } from "../helpers/nano";
 
 Model.setBuilder(Model.fromModel);
 
@@ -27,27 +21,22 @@ describe("Bulk operations", () => {
   let con: ServerScope;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let adapter: NanoAdapter;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
-    con = NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("bulk");
+    con = resources.connection;
     adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
-      protocol: "http",
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
     });
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await NanoAdapter.deleteDatabase(con, resources.dbName);
   });
 
   @uses("nano")

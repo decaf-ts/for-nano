@@ -19,44 +19,34 @@ import {
   ModelArg,
   required,
 } from "@decaf-ts/decorator-validation";
-import { ConflictError } from "@decaf-ts/db-decorators";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "queries_date_db";
-const dbHost = "localhost:10010";
+import { createNanoTestResources } from "../helpers/nano";
 const dayInMs = 24 * 60 * 60 * 1000;
 const startTimestamp = Date.UTC(2024, 0, 1);
-
-const con: ServerScope = NanoAdapter.connect(admin, admin_password, dbHost);
-const adapter = new NanoAdapter({
-  user: user,
-  password: user_password,
-  host: dbHost,
-  dbName: dbName,
-  protocol: "http",
-});
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(50000);
 
 describe("Queries with dates", () => {
+  let con: ServerScope;
+  let adapter: NanoAdapter;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
+
   beforeAll(async () => {
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("date_query");
+    con = resources.connection;
+    adapter = new NanoAdapter({
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
+    });
     await adapter.initialize();
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await NanoAdapter.deleteDatabase(con, resources.dbName);
   });
 
   @uses("nano")

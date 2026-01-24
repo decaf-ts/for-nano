@@ -14,18 +14,12 @@ import {
 } from "./models";
 import { Model } from "@decaf-ts/decorator-validation";
 import { ServerScope } from "nano";
-import { ConflictError, NotFoundError } from "@decaf-ts/db-decorators";
+import { NotFoundError } from "@decaf-ts/db-decorators";
 import { Condition, Sequence, SequenceModel } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "complex_db";
-const dbHost = "localhost:10010";
+import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 Model.setBuilder(Model.fromModel);
 
@@ -34,27 +28,16 @@ jest.setTimeout(500000);
 describe(`Complex Database`, function () {
   let con: ServerScope;
   let adapter: NanoAdapter;
+  let setup: Awaited<ReturnType<typeof setupNanoAdapter>>;
 
   beforeAll(async () => {
-    con = NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
-    adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
-      protocol: "http",
-    });
+    setup = await setupNanoAdapter("model_relations");
+    adapter = setup.adapter;
+    con = setup.resources.connection;
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await NanoAdapter.deleteDatabase(con, setup.resources.dbName);
   });
 
   let sequenceRepository: NanoRepository<SequenceModel>;

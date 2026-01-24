@@ -13,7 +13,7 @@ import {
 import { createdBy, Observer, pk, Repository } from "@decaf-ts/core";
 import { ServerScope } from "nano";
 import { NanoAdapter, NanoFlavour } from "../../src/index";
-import { ConflictError } from "@decaf-ts/db-decorators";
+import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 @uses(RamFlavour)
 @model()
@@ -48,13 +48,6 @@ class Model2 extends Model {
   }
 }
 
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "test_db_multi_flavour";
-const dbHost = "localhost:10010";
-
 jest.setTimeout(50000);
 
 describe("Adapter Integration", () => {
@@ -62,23 +55,12 @@ describe("Adapter Integration", () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let adapter: NanoAdapter;
   // let repo: NanoRepository<TestModel>;
+  let setup: Awaited<ReturnType<typeof setupNanoAdapter>>;
 
   beforeAll(async () => {
-    con = await NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
-    adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
-      protocol: "http",
-    });
+    setup = await setupNanoAdapter("multi_flavour");
+    adapter = setup.adapter;
+    con = setup.resources.connection;
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -102,7 +84,7 @@ describe("Adapter Integration", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await NanoAdapter.deleteDatabase(con, setup.resources.dbName);
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -15,24 +15,8 @@ import {
   ModelArg,
   required,
 } from "@decaf-ts/decorator-validation";
-import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoRepository } from "../../src/NanoRepository";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "multi_sort_db";
-const dbHost = "localhost:10010";
-
-const con: ServerScope = NanoAdapter.connect(admin, admin_password, dbHost);
-const adapter = new NanoAdapter({
-  user,
-  password: user_password,
-  host: dbHost,
-  dbName,
-  protocol: "http",
-});
+import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 Model.setBuilder(Model.fromModel);
 
@@ -58,15 +42,14 @@ jest.setTimeout(60000);
 
 describe("NanoAdapter multi-level sorting", () => {
   let repo: NanoRepository<LeaderboardEntry>;
+  let setup: Awaited<ReturnType<typeof setupNanoAdapter>>;
+  let con: ServerScope;
+  let adapter: NanoAdapter;
 
   beforeAll(async () => {
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    setup = await setupNanoAdapter("order_by");
+    con = setup.resources.connection;
+    adapter = setup.adapter;
      
     console.log(
       "model indexes",
@@ -118,6 +101,10 @@ describe("NanoAdapter multi-level sorting", () => {
     ].map((entry) => new LeaderboardEntry(entry));
 
     await repo.createAll(entries);
+  });
+
+  afterAll(async () => {
+    await NanoAdapter.deleteDatabase(con, setup.resources.dbName);
   });
 
   afterAll(async () => {

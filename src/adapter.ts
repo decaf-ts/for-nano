@@ -14,6 +14,7 @@ import {
   generateViews,
   MangoQuery,
   MangoResponse,
+  ViewResponse,
   wrapDocumentScope,
 } from "@decaf-ts/for-couchdb";
 import Nano from "nano";
@@ -634,6 +635,20 @@ export class NanoAdapter extends CouchDBAdapter<
       }
       if (docsOnly) return response.docs as R;
       return response as R;
+    } catch (e: any) {
+      throw this.parseError(e);
+    }
+  }
+
+  async view<R>(
+    ddoc: string,
+    viewName: string,
+    options: Record<string, any>,
+    ..._args: ContextualArgs<Context<NanoFlags>>
+  ): Promise<ViewResponse<R>> {
+    void _args;
+    try {
+      return (await this.client.view(ddoc, viewName, options)) as ViewResponse<R>;
     } catch (e: any) {
       throw this.parseError(e);
     }
