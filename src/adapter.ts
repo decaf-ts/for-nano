@@ -163,7 +163,12 @@ export class NanoAdapter extends CouchDBAdapter<
    */
   override async shutdown(): Promise<void> {
     await this.shutdownProxies();
-    if (this._client) this._client = undefined;
+    if (this._client) {
+      NanoAdapter.closeConnection(
+        (this._client as any)[CouchDBKeys.NATIVE] as ServerScope | undefined
+      );
+      this._client = undefined;
+    }
   }
 
   /**
@@ -667,9 +672,18 @@ export class NanoAdapter extends CouchDBAdapter<
     user: string,
     pass: string,
     host = "localhost:5984",
-    protocol: "http" | "https" = "http"
+    protocol: "http" | "https" = "http",
+    agent?: any
   ): ServerScope {
-    return Nano(`${protocol}://${user}:${pass}@${host}`);
+    const requestDefaults = agent ? { agent } : undefined;
+    const con = Nano({
+      url: `${protocol}://${user}:${pass}@${host}`,
+      ...(requestDefaults ? { requestDefaults } : {}),
+    });
+    if (con && agent) {
+      (con as any)._decafAgent = agent;
+    }
+    return con;
   }
 
   /**
@@ -735,6 +749,19 @@ export class NanoAdapter extends CouchDBAdapter<
     const { ok } = result;
     if (!ok)
       throw new InternalError(`Failed to delete database with name ${name}`);
+  }
+
+  /**
+   * @description Closes the keep-alive agent associated with a Nano connection
+   * @summary Destroys the custom HTTP/HTTPS agent that was created during connection setup
+   * @param {ServerScope} con - The Nano server connection whose agent should be destroyed
+   */
+  static closeConnection(con?: ServerScope | null) {
+    if (!con) return;
+    const agent = (con as any)?._decafAgent;
+    if (agent && typeof agent.destroy === "function") {
+      agent.destroy();
+    }
   }
 
   /**

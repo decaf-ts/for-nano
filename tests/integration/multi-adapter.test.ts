@@ -7,13 +7,13 @@ RamAdapter.decoration();
 Adapter.setCurrent(RamFlavour);
 
 console.log(`After ram: ${Metadata.flavourOf(TestCountryModel)}`);
-import { ServerScope } from "nano";
 import { Observer, PersistenceKeys } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
 import { NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter, NanoFlavour } from "../../src";
 import { NanoRepository } from "../../src";
+import { cleanupNanoTestResources } from "../helpers/nano";
 import { setupNanoAdapter } from "../helpers/nanoSetup";
 console.log(`After nano: ${Metadata.flavourOf(TestCountryModel)}`);
 
@@ -22,7 +22,6 @@ Model.setBuilder(Model.fromModel);
 jest.setTimeout(50000);
 
 describe("multi adapter", () => {
-  let con: ServerScope;
   let adapter: NanoAdapter;
   let repo: NanoRepository<TestCountryModel>;
   let setupData: Awaited<ReturnType<typeof setupNanoAdapter>>;
@@ -31,7 +30,6 @@ describe("multi adapter", () => {
     expect(Metadata.flavourOf(TestCountryModel)).toEqual(NanoFlavour);
     setupData = await setupNanoAdapter("multi_adapter");
     adapter = setupData.adapter;
-    con = setupData.resources.connection;
     repo = new CouchDBRepository(adapter, TestCountryModel);
   });
 
@@ -55,7 +53,7 @@ describe("multi adapter", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, setupData.resources.dbName);
+    await cleanupNanoTestResources(setupData.resources);
   });
 
   let created: TestCountryModel, updated: TestCountryModel;

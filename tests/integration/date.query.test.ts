@@ -1,5 +1,4 @@
-import { NanoAdapter, NanoRepository } from "../../src";
-import { ServerScope } from "nano";
+import { NanoAdapter } from "../../src";
 import {
   BaseModel,
   Condition,
@@ -7,7 +6,6 @@ import {
   index,
   OrderDirection,
   pk,
-  Repository,
   updatedAt,
 } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
@@ -19,7 +17,11 @@ import {
   ModelArg,
   required,
 } from "@decaf-ts/decorator-validation";
-import { createNanoTestResources } from "../helpers/nano";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
+import { nanoRepository } from "../helpers/repository";
 const dayInMs = 24 * 60 * 60 * 1000;
 const startTimestamp = Date.UTC(2024, 0, 1);
 
@@ -28,13 +30,11 @@ Model.setBuilder(Model.fromModel);
 jest.setTimeout(50000);
 
 describe("Queries with dates", () => {
-  let con: ServerScope;
   let adapter: NanoAdapter;
   let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
     resources = await createNanoTestResources("date_query");
-    con = resources.connection;
     adapter = new NanoAdapter({
       user: resources.user,
       password: resources.password,
@@ -46,7 +46,7 @@ describe("Queries with dates", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, resources.dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   @uses("nano")
@@ -82,10 +82,7 @@ describe("Queries with dates", () => {
   let created: TestObject[];
 
   it("Creates in bulk", async () => {
-    const repo: NanoRepository<TestObject> = Repository.forModel<
-      TestObject,
-      NanoRepository<TestObject>
-    >(TestObject);
+    const repo = nanoRepository(TestObject);
     const models = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
       (i) =>
         new TestObject({
@@ -101,7 +98,7 @@ describe("Queries with dates", () => {
   });
 
   it("Selects all models without filters", async () => {
-    const repo: NanoRepository<TestObject> = Repository.forModel(TestObject);
+    const repo = nanoRepository(TestObject);
     const selected = await repo.select().execute();
     expect(selected.length).toEqual(created.length);
     expect(selected.every((s) => s instanceof TestObject)).toEqual(true);
@@ -110,9 +107,7 @@ describe("Queries with dates", () => {
   it("Filters records with ts before a pivot date", async () => {
     const pivot = toTimestamp(4);
     const condition = Condition.attribute<TestObject>("ts").lt(pivot);
-    const repo = Repository.forModel<TestObject, NanoRepository<TestObject>>(
-      TestObject
-    );
+    const repo = nanoRepository(TestObject);
     const selected = await repo.select().where(condition).execute();
     const expected = created.filter(
       (el) => el.ts.getTime() < pivot.getTime()
@@ -126,9 +121,7 @@ describe("Queries with dates", () => {
   it("Filters records with ts after or equal to a pivot", async () => {
     const pivot = toTimestamp(5);
     const condition = Condition.attribute<TestObject>("ts").gte(pivot);
-    const repo = Repository.forModel<TestObject, NanoRepository<TestObject>>(
-      TestObject
-    );
+    const repo = nanoRepository(TestObject);
     const selected = await repo.select().where(condition).execute();
     const expected = created.filter(
       (el) => el.ts.getTime() >= pivot.getTime()
@@ -145,9 +138,7 @@ describe("Queries with dates", () => {
     const condition = Condition.attribute<TestObject>("ts")
       .gte(from)
       .and(Condition.attribute<TestObject>("ts").lte(to));
-    const repo = Repository.forModel<TestObject, NanoRepository<TestObject>>(
-      TestObject
-    );
+    const repo = nanoRepository(TestObject);
     const selected = await repo.select().where(condition).execute();
     expect(selected.length).toEqual(
       created.filter(
@@ -166,9 +157,7 @@ describe("Queries with dates", () => {
   });
 
   it("Orders by ts and verifies the bounds of the first and last entries", async () => {
-    const repo = Repository.forModel<TestObject, NanoRepository<TestObject>>(
-      TestObject
-    );
+    const repo = nanoRepository(TestObject);
     const selected = await repo
       .select()
       .orderBy(["ts", OrderDirection.ASC])
@@ -181,9 +170,7 @@ describe("Queries with dates", () => {
   });
 
   it("deletes them all", async () => {
-    const repo = Repository.forModel<TestObject, NanoRepository<TestObject>>(
-      TestObject
-    );
+    const repo = nanoRepository(TestObject);
 
     const models = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     const deleted = await repo.deleteAll(models);

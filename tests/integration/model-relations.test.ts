@@ -13,12 +13,12 @@ import {
   TestUserModel,
 } from "./models";
 import { Model } from "@decaf-ts/decorator-validation";
-import { ServerScope } from "nano";
 import { NotFoundError } from "@decaf-ts/db-decorators";
 import { Condition, Sequence, SequenceModel } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
+import { cleanupNanoTestResources } from "../helpers/nano";
 import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 Model.setBuilder(Model.fromModel);
@@ -26,18 +26,16 @@ Model.setBuilder(Model.fromModel);
 jest.setTimeout(500000);
 
 describe(`Complex Database`, function () {
-  let con: ServerScope;
   let adapter: NanoAdapter;
   let setup: Awaited<ReturnType<typeof setupNanoAdapter>>;
 
   beforeAll(async () => {
     setup = await setupNanoAdapter("model_relations");
     adapter = setup.adapter;
-    con = setup.resources.connection;
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, setup.resources.dbName);
+    await cleanupNanoTestResources(setup.resources);
   });
 
   let sequenceRepository: NanoRepository<SequenceModel>;

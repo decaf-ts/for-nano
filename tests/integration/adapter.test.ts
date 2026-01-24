@@ -1,4 +1,3 @@
-import { ServerScope } from "nano";
 import { Observer, PersistenceKeys } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
@@ -6,21 +5,22 @@ import { TestModel } from "../TestModel";
 import { NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
-import { createNanoTestResources } from "../helpers/nano";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(50000);
 
 describe("Adapter Integration", () => {
-  let con: ServerScope;
   let adapter: NanoAdapter;
   let repo: NanoRepository<TestModel>;
   let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
     resources = await createNanoTestResources("adapter");
-    con = resources.connection;
     adapter = new NanoAdapter({
       user: resources.user,
       password: resources.password,
@@ -52,7 +52,7 @@ describe("Adapter Integration", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, resources.dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   let created: TestModel, updated: TestModel;

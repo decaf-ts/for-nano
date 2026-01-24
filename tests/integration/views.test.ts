@@ -1,4 +1,3 @@
-import { ServerScope } from "nano";
 import {
   BaseModel,
   Condition,
@@ -25,16 +24,12 @@ import {
   min,
   sum,
 } from "@decaf-ts/for-couchdb";
-import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoFlavour } from "../../src/constants";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "test_view_db";
-const dbHost = "localhost:10010";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
 
 Model.setBuilder(Model.fromModel);
 
@@ -153,24 +148,18 @@ class ViewTestModel extends BaseModel {
 jest.setTimeout(60000);
 
 describe("Views Integration", () => {
-  let con: ServerScope;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
   let adapter: NanoAdapter;
   let repo: CouchDBRepository<ViewTestModel>;
 
   beforeAll(async () => {
-    con = await NanoAdapter.connect(admin, admin_password, dbHost);
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("views");
     adapter = new NanoAdapter({
-      user,
-      password: user_password,
-      host: dbHost,
-      dbName,
-      protocol: "http",
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
     });
     await adapter.initialize();
     // Debug: ensure generator output matches design docs
@@ -199,7 +188,7 @@ describe("Views Integration", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   it("creates and queries views", async () => {

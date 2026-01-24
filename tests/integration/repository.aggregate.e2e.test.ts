@@ -1,4 +1,3 @@
-import { ServerScope } from "nano";
 import {
   BaseModel,
   Condition,
@@ -8,7 +7,6 @@ import {
   table,
 } from "@decaf-ts/core";
 import { count, distinct, groupBy, max, min, sum } from "@decaf-ts/for-couchdb";
-import { ConflictError } from "@decaf-ts/db-decorators";
 import {
   Model,
   model,
@@ -18,15 +16,12 @@ import {
 import { uses } from "@decaf-ts/decoration";
 import { NanoAdapter } from "../../src";
 import { NanoFlavour } from "../../src/constants";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
 
 Model.setBuilder(Model.fromModel);
-
-const admin = "couchdb.admin";
-const adminPassword = "couchdb.admin";
-const user = "couchdb.admin";
-const userPassword = "couchdb.admin";
-const dbName = "test_repository_aggregate";
-const dbHost = "localhost:10010";
 
 @uses(NanoFlavour)
 @table("aggregate_products")
@@ -63,38 +58,49 @@ class AggregateProduct extends BaseModel {
 const idAttribute = Model.pk(AggregateProduct);
 
 describe("Nano repository aggregate operations", () => {
-  let con: ServerScope;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
   let adapter: NanoAdapter;
   let repo: Repository<AggregateProduct, any>;
   let bulk: AggregateProduct[];
 
   beforeAll(async () => {
-    con = await NanoAdapter.connect(admin, adminPassword, dbHost);
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
-    try {
-      await NanoAdapter.createUser(con, dbName, user, userPassword);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
-
+    resources = await createNanoTestResources("aggregate");
     adapter = new NanoAdapter({
-      user,
-      password: userPassword,
-      host: dbHost,
-      dbName,
-      protocol: "http",
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
     });
     await adapter.initialize();
     repo = Repository.forModel(AggregateProduct);
 
+    const inventedNames = [
+      "name0",
+      "name1",
+      "name2",
+      "name0",
+      "name1",
+      "name2",
+      "name3",
+      "name4",
+      "name4",
+      "name3",
+      "name0",
+      "name1",
+      "name2",
+      "name0",
+      "name1",
+      "name2",
+      "name3",
+      "name4",
+      "name3",
+      "name4",
+    ];
     const models = Array.from({ length: 20 }).map((_, index) => {
       return new AggregateProduct({
         productCode: `prod-${index}`,
-        inventedName: `name${index % 5}`,
+        inventedName: inventedNames[index],
         nameMedicinalProduct: `medicine${index}`,
         counter: index,
         launchDate: new Date(2024, 0, index + 1),
@@ -108,7 +114,7 @@ describe("Nano repository aggregate operations", () => {
       const keys = bulk.map((b) => b[idAttribute] as string);
       await repo.deleteAll(keys);
     }
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   describe("COUNT operations", () => {

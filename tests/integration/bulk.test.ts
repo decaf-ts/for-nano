@@ -1,4 +1,4 @@
-import { BaseModel, PersistenceKeys, pk, Repository } from "@decaf-ts/core";
+import { BaseModel, PersistenceKeys, pk } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 import {
   minlength,
@@ -7,25 +7,25 @@ import {
   ModelArg,
   required,
 } from "@decaf-ts/decorator-validation";
-import { ServerScope } from "nano";
 import { NotFoundError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
-import { NanoRepository } from "../../src";
-import { createNanoTestResources } from "../helpers/nano";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
+import { nanoRepository } from "../helpers/repository";
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(50000);
 
 describe("Bulk operations", () => {
-  let con: ServerScope;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let adapter: NanoAdapter;
   let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
     resources = await createNanoTestResources("bulk");
-    con = resources.connection;
     adapter = new NanoAdapter({
       user: resources.user,
       password: resources.password,
@@ -36,7 +36,7 @@ describe("Bulk operations", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, resources.dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   @uses("nano")
@@ -58,10 +58,7 @@ describe("Bulk operations", () => {
   let updated: TestBulkModel[];
 
   it.skip("creates one", async () => {
-    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
-      TestBulkModel,
-      NanoRepository<TestBulkModel>
-    >(TestBulkModel);
+    const repo = nanoRepository(TestBulkModel);
     const created = await repo.create(
       new TestBulkModel({
         attr1: "attr1",
@@ -71,10 +68,7 @@ describe("Bulk operations", () => {
   });
 
   it("Creates in bulk", async () => {
-    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
-      TestBulkModel,
-      NanoRepository<TestBulkModel>
-    >(TestBulkModel);
+    const repo = nanoRepository(TestBulkModel);
     const models = [1].map(
       (i) =>
         new TestBulkModel({
@@ -89,10 +83,7 @@ describe("Bulk operations", () => {
   });
 
   it("Reads in Bulk", async () => {
-    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
-      TestBulkModel,
-      NanoRepository<TestBulkModel>
-    >(TestBulkModel);
+    const repo = nanoRepository(TestBulkModel);
     const ids = created.map((c) => c.id) as number[];
     const read = await repo.readAll(ids);
     expect(read).toBeDefined();
@@ -104,10 +95,7 @@ describe("Bulk operations", () => {
   });
 
   it("Updates in Bulk", async () => {
-    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
-      TestBulkModel,
-      NanoRepository<TestBulkModel>
-    >(TestBulkModel);
+    const repo = nanoRepository(TestBulkModel);
     const toUpdate = created.map((c, i) => {
       return new TestBulkModel({
         id: c.id,
@@ -123,10 +111,7 @@ describe("Bulk operations", () => {
   });
 
   it("Deletes in Bulk", async () => {
-    const repo: NanoRepository<TestBulkModel> = Repository.forModel<
-      TestBulkModel,
-      NanoRepository<TestBulkModel>
-    >(TestBulkModel);
+    const repo = nanoRepository(TestBulkModel);
     const ids = created.map((c) => c.id);
     const deleted = await repo.deleteAll(ids as number[]);
     expect(deleted).toBeDefined();

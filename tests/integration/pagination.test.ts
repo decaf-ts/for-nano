@@ -1,25 +1,21 @@
 import { Model } from "@decaf-ts/decorator-validation";
-import { ServerScope } from "nano";
-import { ConflictError, InternalError } from "@decaf-ts/db-decorators";
+import { InternalError } from "@decaf-ts/db-decorators";
 import { OrderDirection, Paginator } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { TestCountryModel } from "./models";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "pagination_db";
-const dbHost = "localhost:10010";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(500000);
 
 describe(`Pagination`, function () {
-  let con: ServerScope;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
   let adapter: NanoAdapter;
   let repo: NanoRepository<TestCountryModel>;
 
@@ -27,20 +23,13 @@ describe(`Pagination`, function () {
   const size = 100;
 
   beforeAll(async () => {
-    con = NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("pagination");
     adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
-      protocol: "http",
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
     });
     repo = new CouchDBRepository(adapter, TestCountryModel);
     const models = Object.keys(new Array(size).fill(0)).map(
@@ -58,7 +47,7 @@ describe(`Pagination`, function () {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   let selected: TestCountryModel[];

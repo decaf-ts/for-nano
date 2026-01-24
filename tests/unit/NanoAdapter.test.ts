@@ -177,7 +177,11 @@ describe("NanoAdapter static helpers", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { NanoAdapter: NA } = require("../../src/adapter");
     NA.connect("a", "b", "h:1", "https");
-    expect(mock).toHaveBeenCalledWith("https://a:b@h:1");
+    expect(mock).toHaveBeenCalled();
+    const callArg = mock.mock.calls[0][0];
+    const calledUrl =
+      typeof callArg === "string" ? callArg : (callArg as any)?.url;
+    expect(calledUrl).toBe("https://a:b@h:1");
     jest.dontMock("nano");
   });
 
@@ -193,9 +197,10 @@ describe("NanoAdapter static helpers", () => {
     await expect(
       NanoAdapter.createDatabase(con as any, "db")
     ).rejects.toThrow();
-    await expect(NanoAdapter.deleteDatabase(con as any, "db")).rejects.toThrow(
-      InternalError
-    );
+    await expect(
+      NanoAdapter.deleteDatabase(con as any, "db")
+    ).rejects.toThrow(InternalError);
+    NanoAdapter.closeConnection(con);
   });
 
   test("createUser success path and deleteUser", async () => {
@@ -274,6 +279,7 @@ describe("NanoAdapter additional coverage", () => {
     await expect(
       NanoAdapter.deleteDatabase(con as any, "db")
     ).resolves.toBeUndefined();
+    NanoAdapter.closeConnection(con);
   });
 });
 

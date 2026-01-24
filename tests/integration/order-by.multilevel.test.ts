@@ -1,12 +1,10 @@
 import { NanoAdapter } from "../../src";
-import { ServerScope } from "nano";
 import {
   BaseModel,
   Condition,
   index,
   OrderDirection,
   pk,
-  Repository,
 } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 import {
@@ -16,7 +14,9 @@ import {
   required,
 } from "@decaf-ts/decorator-validation";
 import { NanoRepository } from "../../src/NanoRepository";
+import { cleanupNanoTestResources } from "../helpers/nano";
 import { setupNanoAdapter } from "../helpers/nanoSetup";
+import { nanoRepository } from "../helpers/repository";
 
 Model.setBuilder(Model.fromModel);
 
@@ -43,14 +43,14 @@ jest.setTimeout(60000);
 describe("NanoAdapter multi-level sorting", () => {
   let repo: NanoRepository<LeaderboardEntry>;
   let setup: Awaited<ReturnType<typeof setupNanoAdapter>>;
-  let con: ServerScope;
   let adapter: NanoAdapter;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
     setup = await setupNanoAdapter("order_by");
-    con = setup.resources.connection;
+    resources = setup.resources;
     adapter = setup.adapter;
-     
+
     console.log(
       "model indexes",
       JSON.stringify(Model.indexes(LeaderboardEntry), null, 2)
@@ -59,35 +59,35 @@ describe("NanoAdapter multi-level sorting", () => {
     // Ensure the composite index exists before querying
     const dbClient = (adapter as any).client;
     const createIndexSpy = jest.spyOn(dbClient, "createIndex");
-    await (adapter as unknown as { index: (...models: typeof LeaderboardEntry[]) => Promise<void> }).index(
-      LeaderboardEntry
-    );
-     
+    await (
+      adapter as unknown as {
+        index: (...models: (typeof LeaderboardEntry)[]) => Promise<void>;
+      }
+    ).index(LeaderboardEntry);
+
     console.log(
       "created indexes",
       createIndexSpy.mock.calls.map(([definition]) => definition)
     );
-     
+
     console.log(
       "db index dump",
       JSON.stringify((await dbClient.get("_index")).indexes, null, 2)
     );
-     
+
     console.log(
       "index fields detail",
       createIndexSpy.mock.calls.map(([definition]) =>
         JSON.stringify(definition?.index?.fields)
       )
     );
-     
+
     console.log(
       "db index dump",
       JSON.stringify((await dbClient.get("_index")).indexes, null, 2)
     );
 
-    repo = Repository.forModel<LeaderboardEntry, NanoRepository<LeaderboardEntry>>(
-      LeaderboardEntry
-    );
+    repo = nanoRepository(LeaderboardEntry);
 
     const entries = [
       { id: 1, category: "alpha", score: 10 },
@@ -104,11 +104,7 @@ describe("NanoAdapter multi-level sorting", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, setup.resources.dbName);
-  });
-
-  afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   it("orders by category asc and score asc using enum directions", async () => {

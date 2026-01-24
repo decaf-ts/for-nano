@@ -11,8 +11,8 @@ import {
   required,
 } from "@decaf-ts/decorator-validation";
 import { createdBy, Observer, pk, Repository } from "@decaf-ts/core";
-import { ServerScope } from "nano";
 import { NanoAdapter, NanoFlavour } from "../../src/index";
+import { cleanupNanoTestResources } from "../helpers/nano";
 import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 @uses(RamFlavour)
@@ -51,16 +51,16 @@ class Model2 extends Model {
 jest.setTimeout(50000);
 
 describe("Adapter Integration", () => {
-  let con: ServerScope;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let adapter: NanoAdapter;
+  let testUser: string;
   // let repo: NanoRepository<TestModel>;
   let setup: Awaited<ReturnType<typeof setupNanoAdapter>>;
 
   beforeAll(async () => {
     setup = await setupNanoAdapter("multi_flavour");
     adapter = setup.adapter;
-    con = setup.resources.connection;
+    testUser = setup.resources.user;
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -84,7 +84,7 @@ describe("Adapter Integration", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, setup.resources.dbName);
+    await cleanupNanoTestResources(setup.resources);
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -121,6 +121,6 @@ describe("Adapter Integration", () => {
 
     expect(created2).toBeDefined();
     expect(created2.hasErrors()).toBeUndefined();
-    expect(created2.owner2).toEqual(user);
+    expect(created2.owner2).toEqual(testUser);
   });
 });

@@ -20,7 +20,7 @@ export class NanoRepository<M extends Model> extends CouchDBRepository<
     super(adapter, model);
   }
 
-  override override(flags: Partial<FlagsOf<ContextOf<NanoAdapter>>>): this {
+  override override(flags: Partial<FlagsOf<ContextOf<NanoAdapter>>>) {
     return super.override(flags).for(flags as unknown as never);
   }
 }

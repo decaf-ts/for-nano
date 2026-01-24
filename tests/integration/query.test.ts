@@ -1,21 +1,6 @@
 import { NanoAdapter } from "../../src";
-import { ServerScope } from "nano";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "queries_db";
-const dbHost = "localhost:10010";
-
-const con: ServerScope = NanoAdapter.connect(admin, admin_password, dbHost);
-const adapter = new NanoAdapter({
-  user: user,
-  password: user_password,
-  host: dbHost,
-  dbName: dbName,
-  protocol: "http",
-});
+import { createNanoTestResources, cleanupNanoTestResources } from "../helpers/nano";
+import { nanoRepository } from "../helpers/repository";
 
 import {
   BaseModel,
@@ -23,7 +8,6 @@ import {
   index,
   OrderDirection,
   pk,
-  Repository,
 } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 import {
@@ -35,32 +19,16 @@ import {
   required,
   type,
 } from "@decaf-ts/decorator-validation";
-import {
-  ConflictError,
-  InternalError,
-  readonly,
-} from "@decaf-ts/db-decorators";
+import { InternalError, readonly } from "@decaf-ts/db-decorators";
 
-import { NanoRepository } from "../../src";
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(50000);
 
 describe("Queries", () => {
-  beforeAll(async () => {
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
-  });
-
-  afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
-  });
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
+  let adapter: NanoAdapter;
 
   @uses("nano")
   @model()
@@ -90,10 +58,7 @@ describe("Queries", () => {
   let created: TestUser[];
 
   it("Creates in bulk", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const models = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
       (i) =>
         new TestUser({
@@ -109,11 +74,23 @@ describe("Queries", () => {
     expect(created.every((el) => !el.hasErrors())).toEqual(true);
   });
 
+  beforeAll(async () => {
+    resources = await createNanoTestResources("queries");
+    adapter = new NanoAdapter({
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
+      protocol: resources.protocol,
+    });
+  });
+
+  afterAll(async () => {
+    await cleanupNanoTestResources(resources);
+  });
+
   it("Performs simple queries - full object", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const selected = await repo.select().execute();
     expect(
       created.every((c) => c.equals(selected.find((s: any) => (s.id = c.id))))
@@ -121,10 +98,7 @@ describe("Queries", () => {
   });
 
   it("Performs simple queries - attributes only", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const selected = await repo.select(["age", "sex"]).execute();
     expect(selected).toEqual(
       expect.arrayContaining(
@@ -140,20 +114,14 @@ describe("Queries", () => {
   });
 
   it("Performs conditional queries - full object", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const condition = Condition.attribute<TestUser>("age").eq(20);
     const selected = await repo.select().where(condition).execute();
     expect(selected.length).toEqual(created.filter((c) => c.age === 20).length);
   });
 
   it("Performs conditional queries - selected attributes", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const condition = Condition.attribute<TestUser>("age").eq(20);
     const selected = await repo
       .select(["age", "sex"])
@@ -174,10 +142,7 @@ describe("Queries", () => {
   });
 
   it("Performs AND conditional queries - full object", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const condition = Condition.attribute<TestUser>("age")
       .eq(20)
       .and(Condition.attribute<TestUser>("sex").eq("M"));
@@ -188,9 +153,7 @@ describe("Queries", () => {
   });
 
   it("Performs OR conditional queries - full object", async () => {
-    const repo = Repository.forModel<TestUser, NanoRepository<TestUser>>(
-      TestUser
-    );
+    const repo = nanoRepository(TestUser);
     const condition = Condition.attribute<TestUser>("age")
       .eq(20)
       .or(Condition.attribute<TestUser>("age").eq(19));
@@ -201,10 +164,7 @@ describe("Queries", () => {
   });
 
   it("fails to Sorts attribute without indexes", async () => {
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     await expect(() =>
       repo.select().orderBy(["name", OrderDirection.DSC]).execute()
     ).rejects.toThrow(InternalError);
@@ -212,10 +172,7 @@ describe("Queries", () => {
 
   it("Sorts attribute when indexed", async () => {
     await adapter.initialize();
-    const repo: NanoRepository<TestUser> = Repository.forModel<
-      TestUser,
-      NanoRepository<TestUser>
-    >(TestUser);
+    const repo = nanoRepository(TestUser);
     const sorted = await repo
       .select()
       .orderBy(["age", OrderDirection.DSC])

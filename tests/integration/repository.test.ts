@@ -1,48 +1,37 @@
 import { Model } from "@decaf-ts/decorator-validation";
-import { ServerScope } from "nano";
 import { repository, Repository } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { TestModel } from "../TestModel";
-import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoAdapter } from "../../src";
 import { NanoRepository } from "../../src";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
 import { uses } from "@decaf-ts/decoration";
-
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "repository_db";
-const dbHost = "localhost:10010";
 
 Model.setBuilder(Model.fromModel);
 
 jest.setTimeout(50000);
 
 describe("repositories", () => {
-  let con: ServerScope;
   let adapter: NanoAdapter;
+  let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
   beforeAll(async () => {
-    con = NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("repository");
+    expect(resources.connection).toBeDefined();
     adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
       protocol: "http",
     });
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   it("instantiates via constructor", () => {

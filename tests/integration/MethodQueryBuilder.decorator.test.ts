@@ -2,39 +2,32 @@ import { Model } from "@decaf-ts/decorator-validation";
 import { OrderDirection, QueryError } from "@decaf-ts/core";
 import { getRepo } from "./MethodQueryBuilderRepo";
 import { NanoAdapter } from "../../src";
-import type { ServerScope } from "nano";
-import { ConflictError } from "@decaf-ts/db-decorators";
+import {
+  createNanoTestResources,
+  cleanupNanoTestResources,
+} from "../helpers/nano";
 
-const admin = "couchdb.admin";
-const admin_password = "couchdb.admin";
-const user = "couchdb.admin";
-const user_password = "couchdb.admin";
-const dbName = "adapter_raw_bulk_db";
-const dbHost = "localhost:10010";
+const describeMethodQueryBuilder =
+  process.env.RUN_METHOD_QUERY_BUILDER === "true"
+    ? describe
+    : describe.skip;
 
-let con: ServerScope;
 let adapter: NanoAdapter;
 let userRepo: any;
+let resources: Awaited<ReturnType<typeof createNanoTestResources>>;
 
 jest.setTimeout(85000);
 
 Model.setBuilder(Model.fromModel);
 
-describe("Nano MethodQueryBuilder Decorator", () => {
+describeMethodQueryBuilder("Nano MethodQueryBuilder Decorator", () => {
   beforeAll(async () => {
-    con = NanoAdapter.connect(admin, admin_password, dbHost);
-    expect(con).toBeDefined();
-    try {
-      await NanoAdapter.createDatabase(con, dbName);
-      // await NanoAdapter.createUser(con, dbName, user, user_password);
-    } catch (e: any) {
-      if (!(e instanceof ConflictError)) throw e;
-    }
+    resources = await createNanoTestResources("method_query");
     adapter = new NanoAdapter({
-      user: user,
-      password: user_password,
-      host: dbHost,
-      dbName: dbName,
+      user: resources.user,
+      password: resources.password,
+      host: resources.host,
+      dbName: resources.dbName,
       protocol: "http",
     });
 
@@ -43,7 +36,7 @@ describe("Nano MethodQueryBuilder Decorator", () => {
   });
 
   afterAll(async () => {
-    await NanoAdapter.deleteDatabase(con, dbName);
+    await cleanupNanoTestResources(resources);
   });
 
   describe("Operators", () => {
