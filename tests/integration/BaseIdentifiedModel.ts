@@ -1,12 +1,9 @@
-import { type ModelArg } from "@decaf-ts/decorator-validation";
+import { Model, type ModelArg } from "@decaf-ts/decorator-validation";
 import { createdBy, index, OrderDirection, updatedBy } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 
-import { BaseModel } from "../../../for-fabric/src/contract/models/BaseModel";
-import { E2eConfig } from "./e2e.config";
-
-@uses(E2eConfig.flavour)
-export class BaseIdentifiedModel extends BaseModel {
+@uses("nano")
+export class BaseIdentifiedModel extends Model {
   @createdBy()
   @index([OrderDirection.ASC, OrderDirection.DSC])
   createdBy!: string;

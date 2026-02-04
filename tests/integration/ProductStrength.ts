@@ -1,19 +1,17 @@
 import type { ModelArg } from "@decaf-ts/decorator-validation";
 import { model, required } from "@decaf-ts/decorator-validation";
-import { column, index, OrderDirection, pk, table } from "@decaf-ts/core";
+import { column, pk, table } from "@decaf-ts/core";
 
 import { description, uses } from "@decaf-ts/decoration";
-import { TableNames } from "../../../for-fabric/src/contract/models/constants";
 
 import { BaseIdentifiedModel } from "./BaseIdentifiedModel";
-import { E2eConfig } from "./e2e.config";
 
-@uses(E2eConfig.flavour)
-@table(TableNames.ProductStrength)
+@uses("nano")
+@table()
 @model()
 @description("Represents the product’s strength and composition details.")
 export class ProductStrength extends BaseIdentifiedModel {
-  @pk({ type: Number, generated: true })
+  @pk()
   @description("Unique identifier of the product strength.")
   id!: number;
 

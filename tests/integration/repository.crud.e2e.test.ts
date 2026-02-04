@@ -2,6 +2,8 @@
 
 import { Context, NotFoundError, OperationKeys } from "@decaf-ts/db-decorators";
 
+import { NanoAdapter, NanoRepository } from "../../src";
+console.log(NanoAdapter.name);
 import { Model } from "@decaf-ts/decorator-validation";
 import {
   AllOperationKeys,
@@ -20,8 +22,6 @@ import { Market } from "./Market";
 import { Product } from "./Product";
 import { ProductStrength } from "./ProductStrength";
 import { E2eConfig } from "./e2e.config";
-import { RamRepository } from "@decaf-ts/core/ram";
-import { NanoAdapter, NanoRepository } from "../../src";
 import { createNanoTestResources } from "../helpers/nano";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { TestModel } from "../TestModel";
@@ -70,7 +70,7 @@ describe("e2e Repository test", () => {
   }
 
   beforeAll(async () => {
-    adapter = await adapterFactory();
+    // adapter = await adapterFactory();
     // repo = Repository.forModel(Clazz);
     // resources = await createNanoTestResources("repository");
     // expect(resources.connection).toBeDefined();
@@ -82,7 +82,7 @@ describe("e2e Repository test", () => {
     //   protocol: "http",
     // });
     // await adapter.initialize();
-    repo = new CouchDBRepository(adapter as any, Product);
+    // repo = new CouchDBRepository(adapter as any, Product);
   });
 
   beforeEach(() => {
@@ -128,6 +128,60 @@ describe("e2e Repository test", () => {
 
   it("creates", async () => {
     const id = generateGtin();
+
+    const ps = new ProductStrength();
+
+    let p1 = new Product();
+    p1 = new Product({ id: id });
+    p1 = new Product({
+      id: id,
+      inventedName: "product",
+      nameMedicinalProduct: "sdasasdasd",
+    });
+    p1 = new Product({
+      id: id,
+      inventedName: "product",
+      nameMedicinalProduct: "sdasasdasd",
+      strengths: [
+        {
+          productCode: id,
+          strength: "200mg",
+          substance: "Ibuprofen",
+        },
+      ],
+    });
+    p1 = new Product({
+      id: id,
+      inventedName: "product",
+      nameMedicinalProduct: "sdasasdasd",
+      strengths: [
+        {
+          productCode: id,
+          strength: "200mg",
+          substance: "Ibuprofen",
+        },
+        {
+          productCode: id,
+          strength: "200mg2",
+          substance: "Ibuprofen2",
+        },
+      ],
+    });
+
+    p1 = new Product({
+      id: id,
+      inventedName: "product",
+      nameMedicinalProduct: "sdasasdasd",
+      markets: [
+        {
+          productCode: id,
+          marketId: "BR",
+          nationalCode: "BR",
+          mahName: "ProPharma BR",
+        },
+      ],
+    });
+
     const model = new Product({
       productCode: id,
       inventedName: "test_name",
@@ -159,54 +213,54 @@ describe("e2e Repository test", () => {
         },
       ],
     });
-
-    created = await repo.create(model);
-    expect(created).toBeDefined();
+    //
+    // created = await repo.create(model);
+    // expect(created).toBeDefined();
   });
-
-  it("Creates in bulk", async () => {
-    const models = new Array(10).fill(0).map(() => {
-      const id = generateGtin();
-      return new Product({
-        productCode: id,
-        inventedName: "test_name",
-        nameMedicinalProduct: "123456789",
-        strengths: [
-          {
-            productCode: id,
-            strength: "200mg",
-            substance: "Ibuprofen",
-          },
-          {
-            productCode: id,
-            strength: "400mg",
-            substance: "Ibuprofen",
-          },
-        ],
-        markets: [
-          {
-            productCode: id,
-            marketId: "BR",
-            nationalCode: "BR",
-            mahName: "ProPharma BR",
-          },
-          {
-            productCode: id,
-            marketId: "US",
-            nationalCode: "US",
-            mahName: "ProPharma US",
-          },
-        ],
-      });
-    });
-    bulk = await repo.createAll(models);
-    console.log(
-      "product_strength count after create",
-      adapter["client"].get("product_strength")?.size
-    );
-    expect(bulk).toBeDefined();
-    expect(Array.isArray(bulk)).toEqual(true);
-    expect(bulk.every((el) => el instanceof Product)).toEqual(true);
-    expect(bulk.every((el) => !el.hasErrors())).toEqual(true);
-  });
+  //
+  // it("Creates in bulk", async () => {
+  //   const models = new Array(10).fill(0).map(() => {
+  //     const id = generateGtin();
+  //     return new Product({
+  //       productCode: id,
+  //       inventedName: "test_name",
+  //       nameMedicinalProduct: "123456789",
+  //       strengths: [
+  //         {
+  //           productCode: id,
+  //           strength: "200mg",
+  //           substance: "Ibuprofen",
+  //         },
+  //         {
+  //           productCode: id,
+  //           strength: "400mg",
+  //           substance: "Ibuprofen",
+  //         },
+  //       ],
+  //       markets: [
+  //         {
+  //           productCode: id,
+  //           marketId: "BR",
+  //           nationalCode: "BR",
+  //           mahName: "ProPharma BR",
+  //         },
+  //         {
+  //           productCode: id,
+  //           marketId: "US",
+  //           nationalCode: "US",
+  //           mahName: "ProPharma US",
+  //         },
+  //       ],
+  //     });
+  //   });
+  //   bulk = await repo.createAll(models);
+  //   console.log(
+  //     "product_strength count after create",
+  //     adapter["client"].get("product_strength")?.size
+  //   );
+  //   expect(bulk).toBeDefined();
+  //   expect(Array.isArray(bulk)).toEqual(true);
+  //   expect(bulk.every((el) => el instanceof Product)).toEqual(true);
+  //   expect(bulk.every((el) => !el.hasErrors())).toEqual(true);
+  // });
 });

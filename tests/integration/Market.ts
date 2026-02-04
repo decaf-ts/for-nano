@@ -8,16 +8,15 @@ import {
 
 import { composed } from "@decaf-ts/db-decorators";
 import { description, uses } from "@decaf-ts/decoration";
-import { BaseIdentifiedModel } from "../../../for-fabric/src/contract/models/BaseIdentifiedModel";
-import { TableNames } from "../../../for-fabric/src/contract/models/constants";
 
 import { column, index, OrderDirection, pk, table } from "@decaf-ts/core";
 import { gtin } from "./gtin";
 import { E2eConfig } from "./e2e.config";
+import { BaseIdentifiedModel } from "./BaseIdentifiedModel";
 
 @description("Links a product to a specific market.")
-@uses(E2eConfig.flavour)
-@table(TableNames.Market)
+@uses("nano")
+@table()
 @model()
 export class Market extends BaseIdentifiedModel {
   @pk({ type: String, generated: false })

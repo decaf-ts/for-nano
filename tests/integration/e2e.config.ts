@@ -1,15 +1,15 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { NanoAdapter, NanoFlavour } from "../../src/index";
+
 const TEST_ROOT: "src" | "lib" | "dist" = (process.env.TEST_ROOT || "src") as
   | "src"
   | "lib"
   | "dist";
 
-import { Adapter, Context } from "@decaf-ts/core";
+import { Adapter, Context, MaybeContextualArg } from "@decaf-ts/core";
 import { Constructor } from "@decaf-ts/decoration";
 import { ModelConstructor } from "@decaf-ts/decorator-validation";
 import { Contextual } from "@decaf-ts/db-decorators";
 import { Logger, Logging, style } from "@decaf-ts/logging";
-import { RamAdapter, RamFlavour } from "@decaf-ts/core/ram";
 
 export type DecafE2eConfig<A extends Adapter<any, any, any, any>> = {
   flavour: string;
@@ -53,13 +53,13 @@ const ctxMock = jest
     }
   );
 
-export const E2eConfig: DecafE2eConfig<RamAdapter> = {
-  flavour: RamFlavour,
-  adapterClazz: RamAdapter,
+export const E2eConfig: DecafE2eConfig<NanoAdapter> = {
+  flavour: NanoFlavour,
+  adapterClazz: NanoAdapter,
   logger: logger,
-  adapterFactory: async (conf?: any, ...initArgs: any[]) => {
+  adapterFactory: async (conf?: any, ...initArgs: MaybeContextualArg<any>) => {
     const adapter = new E2eConfig.adapterClazz(conf || { user: "e2e-user" });
-    await adapter.initialize(...initArgs);
+    await adapter.initialize(...(initArgs as []));
     return adapter;
   },
   ctxFactoryMock: ctxMock,
