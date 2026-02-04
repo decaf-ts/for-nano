@@ -1,9 +1,10 @@
-import { Model, type ModelArg } from "@decaf-ts/decorator-validation";
+import { type ModelArg } from "@decaf-ts/decorator-validation";
 import { createdBy, index, OrderDirection, updatedBy } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
+import { BaseModel } from "./BaseModel";
 
 @uses("nano")
-export class BaseIdentifiedModel extends Model {
+export class BaseIdentifiedModel extends BaseModel {
   @createdBy()
   @index([OrderDirection.ASC, OrderDirection.DSC])
   createdBy!: string;
