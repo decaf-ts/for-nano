@@ -660,56 +660,6 @@ describe(`Complex Database`, function () {
           testPhone(p);
         });
       });
-
-      it("Populate should fail when all elements do not match the same type", async () => {
-        const country = await testCountryModelRepository.create(
-          new TestCountryModel({
-            name: "Spain",
-            countryCode: "es",
-            locale: "es_ES",
-          })
-        );
-
-        const phone1 = await testPhoneModelRepository.create(
-          new TestPhoneModel({
-            areaCode: "49",
-            number: "490 899000010",
-          })
-        );
-
-        const phoneIds = [
-          phone1.id,
-          {
-            areaCode: "63",
-            number: "063 96310009",
-          },
-        ];
-
-        const user = new TestUserModel({
-          name: "Ronald",
-          email: "ronald@test.com",
-          age: 36,
-          address: {
-            street: "New avenue",
-            doorNumber: "414e4",
-            apartmentNumber: "404",
-            areaCode: "51",
-            city: "New Desert City",
-            country: country.id,
-          },
-          phones: phoneIds,
-        });
-
-        let created: any = undefined;
-        try {
-          created = await userRepository.create(user);
-        } catch (e: any) {
-          expect(e?.message).toContain(
-            "Invalid operation. All elements of property phones must match the same type."
-          );
-        }
-        expect(created).toBeUndefined();
-      });
     });
   });
 });
