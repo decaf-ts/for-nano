@@ -120,7 +120,7 @@ describe("Bulk operations", () => {
     expect(deleted.every((el) => !el.hasErrors())).toEqual(true);
     expect(deleted.every((el, i) => el.equals(updated[i]))).toEqual(true);
     for (const k in created.map((c) => c.id)) {
-      await expect(repo.read(k)).rejects.toThrowError(NotFoundError);
+      await expect(repo.read(k)).rejects.toThrow(NotFoundError);
     }
   });
 });
