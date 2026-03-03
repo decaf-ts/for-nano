@@ -17,8 +17,7 @@ import {
   ViewResponse,
   wrapDocumentScope,
 } from "@decaf-ts/for-couchdb";
-import Nano from "nano";
-import {
+import Nano, {
   DocumentBulkResponse,
   DocumentGetResponse,
   DocumentInsertResponse,
@@ -30,13 +29,14 @@ import { Model } from "@decaf-ts/decorator-validation";
 import { NanoConfig, NanoFlags } from "./types";
 import {
   Adapter,
-  ContextualArgs,
-  PersistenceKeys,
-  RelationsMetadata,
-  UnsupportedError,
   Context,
   ContextOf,
+  ContextualArgs,
+  MaybeContextualArg,
+  PersistenceKeys,
+  RelationsMetadata,
   Repository,
+  UnsupportedError,
 } from "@decaf-ts/core";
 import { NanoFlavour } from "./constants";
 import { NanoRepository } from "./NanoRepository";
@@ -161,8 +161,13 @@ export class NanoAdapter extends CouchDBAdapter<
    * @summary Cleans up internal resources and clears the cached Nano client instance
    * @return {Promise<void>} A promise that resolves when shutdown completes
    */
-  override async shutdown(): Promise<void> {
-    await this.shutdownProxies();
+  override async shutdown(
+    ...args: MaybeContextualArg<Context<NanoFlags>>
+  ): Promise<void> {
+    const { ctxArgs } = (
+      await this.logCtx(args, PersistenceKeys.SHUTDOWN, true)
+    ).for(this.shutdown);
+    await super.shutdown(...ctxArgs);
     if (this._client) {
       NanoAdapter.closeConnection(
         (this._client as any)[CouchDBKeys.NATIVE] as ServerScope | undefined
@@ -653,7 +658,11 @@ export class NanoAdapter extends CouchDBAdapter<
   ): Promise<ViewResponse<R>> {
     void _args;
     try {
-      return (await this.client.view(ddoc, viewName, options)) as ViewResponse<R>;
+      return (await this.client.view(
+        ddoc,
+        viewName,
+        options
+      )) as ViewResponse<R>;
     } catch (e: any) {
       throw this.parseError(e);
     }

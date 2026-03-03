@@ -1,4 +1,4 @@
-import { Adapter, Context, Dispatch } from "@decaf-ts/core";
+import { Adapter, Context, ContextualArgs, Dispatch } from "@decaf-ts/core";
 import {
   DatabaseChangesResponse,
   DatabaseChangesResultItem,
@@ -50,6 +50,12 @@ export class NanoDispatch extends Dispatch<
   private attemptCounter: number = 0;
 
   private active: boolean = false;
+  private changeFeed?: {
+    cancel?: () => void;
+    close?: () => void;
+    destroy?: () => void;
+    removeAllListeners?: () => void;
+  };
 
   constructor(private timeout = 5000) {
     super();
@@ -60,8 +66,11 @@ export class NanoDispatch extends Dispatch<
    * @summary Stops the dispatcher and cleans up any active subscriptions or resources
    * @return {Promise<void>} A promise that resolves when the dispatcher has been closed
    */
-  override close(): Promise<void> {
-    return super.close();
+  override close(...args: ContextualArgs<Context<NanoFlags>>): Promise<void> {
+    this.active = false;
+    this.attemptCounter = 0;
+    this.disposeChangeFeed();
+    return super.close(...args);
   }
 
   /**
@@ -244,7 +253,7 @@ export class NanoDispatch extends Dispatch<
         throw new InternalError(`No adapter/native observed for dispatch`);
       if (this.active) return;
       try {
-        (this.adapter as any).client.changes(
+        const feed = (this.adapter as any).client.changes(
           {
             feed: "continuous",
             include_docs: false,
@@ -253,6 +262,7 @@ export class NanoDispatch extends Dispatch<
           },
           this.changeHandler.bind(this) as any
         );
+        this.changeFeed = feed;
       } catch (e: unknown) {
         if (++this.attemptCounter > 3)
           return subLog.error(`Failed to subscribe to couchdb changes: ${e}`);
@@ -273,6 +283,15 @@ export class NanoDispatch extends Dispatch<
       })
       .catch((e: unknown) => {
         throw new InternalError(`Failed to subscribe to couchdb changes: ${e}`);
-      });
+    });
+  }
+
+  private disposeChangeFeed() {
+    if (!this.changeFeed) return;
+    this.changeFeed.cancel?.();
+    this.changeFeed.close?.();
+    this.changeFeed.destroy?.();
+    this.changeFeed.removeAllListeners?.();
+    this.changeFeed = undefined;
   }
 }
