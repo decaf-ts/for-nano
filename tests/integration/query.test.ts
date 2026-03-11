@@ -1,10 +1,13 @@
-import { NanoAdapter } from "../../src";
+import { NanoAdapter, NanoRepository } from "../../src";
 import { createNanoTestResources, cleanupNanoTestResources } from "../helpers/nano";
 import { nanoRepository } from "../helpers/repository";
+import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 import {
   BaseModel,
   Condition,
+  Context,
+  defaultQueryAttr,
   index,
   OrderDirection,
   pk,
@@ -187,5 +190,313 @@ describe("Queries", () => {
     expect(
       sorted.reverse().every((s: any, i: number) => s.equals(created[i]))
     ).toEqual(true);
+  });
+});
+
+@uses("nano")
+@model()
+class DefaultStringQueryModel extends BaseModel {
+  @pk({ type: Number })
+  id?: number = undefined;
+
+  @required()
+  @defaultQueryAttr()
+  attr1?: string = undefined;
+
+  @required()
+  @defaultQueryAttr()
+  attr2?: string = undefined;
+
+  constructor(arg?: ModelArg<DefaultStringQueryModel>) {
+    super(arg);
+  }
+}
+
+describe("default query statements on nano", () => {
+  let setupData: Awaited<ReturnType<typeof setupNanoAdapter>>;
+  let stringRepo: NanoRepository<DefaultStringQueryModel>;
+
+  beforeAll(async () => {
+    setupData = await setupNanoAdapter("default_query_strings");
+    stringRepo = new NanoRepository(setupData.adapter, DefaultStringQueryModel);
+    const models = [
+      new DefaultStringQueryModel({ attr1: "apple", attr2: "zebra" }),
+      new DefaultStringQueryModel({ attr1: "apricot", attr2: "amber" }),
+      new DefaultStringQueryModel({ attr1: "banana", attr2: "aurora" }),
+      new DefaultStringQueryModel({ attr1: "delta", attr2: "aardvark" }),
+      new DefaultStringQueryModel({ attr1: "omega", attr2: "alpha" }),
+      new DefaultStringQueryModel({ attr1: "sigma", attr2: "altitude" }),
+    ];
+    await stringRepo.createAll(models);
+  });
+
+  afterAll(async () => {
+    await cleanupNanoTestResources(setupData.resources);
+  });
+
+  it("finds matches using decorated default attributes", async () => {
+    const matches = await stringRepo.find("ap", OrderDirection.ASC);
+    expect(matches.map((record) => record.attr1)).toEqual([
+      "apple",
+      "apricot",
+    ]);
+    expect(
+      matches.every(
+        (record) =>
+          record.attr1?.startsWith("ap") || record.attr2?.startsWith("ap")
+      )
+    ).toEqual(true);
+  });
+
+  it("pages defaults using decorated attributes and consistent metadata", async () => {
+    const pageResult = await stringRepo.page("a", OrderDirection.DSC, {
+      offset: 1,
+      limit: 2,
+    });
+
+    expect(pageResult.current).toEqual(1);
+    expect(pageResult.count).toEqual(6);
+    expect(pageResult.total).toEqual(3);
+    expect(
+      pageResult.data.every(
+        (record) =>
+          record.attr1?.startsWith("a") || record.attr2?.startsWith("a")
+      )
+    ).toEqual(true);
+    expect(pageResult.data.map((record) => record.attr1)).toEqual([
+      "sigma",
+      "omega",
+    ]);
+  });
+
+  it("includes matches from non-primary default attributes and keeps ordering consistent", async () => {
+    const ascMatches = await stringRepo.find("al", OrderDirection.ASC);
+    const descMatches = await stringRepo.find("al", OrderDirection.DSC);
+
+    expect(ascMatches.map((record) => record.attr1)).toEqual([
+      "omega",
+      "sigma",
+    ]);
+    expect(descMatches.map((record) => record.attr1)).toEqual([
+      "sigma",
+      "omega",
+    ]);
+    expect(
+      ascMatches.every((record) => record.attr2?.startsWith("al"))
+    ).toEqual(true);
+    expect(
+      descMatches.every((record) => record.attr2?.startsWith("al"))
+    ).toEqual(true);
+
+    const ascPage = await stringRepo.page("al", OrderDirection.ASC, {
+      offset: 1,
+      limit: 1,
+    });
+    expect(ascPage.data.map((record) => record.attr1)).toEqual(["omega"]);
+
+    const descPage = await stringRepo.page("al", OrderDirection.DSC, {
+      offset: 1,
+      limit: 1,
+    });
+    expect(descPage.data.map((record) => record.attr1)).toEqual(["sigma"]);
+  });
+});
+
+@uses("nano")
+@model()
+class NumericSearchModel extends BaseModel {
+  @pk({ type: Number })
+  id?: number = undefined;
+
+  @required()
+  @defaultQueryAttr()
+  searchName?: string = undefined;
+
+  @required()
+  @defaultQueryAttr()
+  searchCode?: string = undefined;
+
+  constructor(arg?: ModelArg<NumericSearchModel>) {
+    super(arg);
+  }
+}
+
+describe("default query statements with numeric strings on nano", () => {
+  const queryValue = "1";
+const expectedAscNames = [
+  "10Start",
+  "1Alpha",
+  "1Beta",
+  "1Zeta",
+  "a1-Gamma",
+  "foo10",
+];
+const expectedDescNames = [...expectedAscNames].reverse();
+
+  let setupData: Awaited<ReturnType<typeof setupNanoAdapter>>;
+  let numericRepo: NanoRepository<NumericSearchModel>;
+  const bookmarkCtx = new Context().accumulate({
+    paginateByBookmark: true,
+  });
+
+  beforeAll(async () => {
+    setupData = await setupNanoAdapter("default_query");
+    numericRepo = new NanoRepository(setupData.adapter, NumericSearchModel);
+    const models = [
+      new NumericSearchModel({
+        searchName: "10Start",
+        searchCode: "10-Start",
+      }),
+      new NumericSearchModel({
+        searchName: "1Alpha",
+        searchCode: "1-Alpha",
+      }),
+      new NumericSearchModel({
+        searchName: "1Beta",
+        searchCode: "1-Beta",
+      }),
+      new NumericSearchModel({
+        searchName: "1Zeta",
+        searchCode: "1-Zeta",
+      }),
+      new NumericSearchModel({
+        searchName: "a1-Gamma",
+        searchCode: "1-Gamma",
+      }),
+      new NumericSearchModel({
+        searchName: "foo10",
+        searchCode: "10-Foo",
+      }),
+      new NumericSearchModel({
+        searchName: "alpha10",
+        searchCode: "alpha-10",
+      }),
+      new NumericSearchModel({
+        searchName: "2Delta",
+        searchCode: "2-Delta",
+      }),
+    ];
+    await numericRepo.createAll(models);
+  });
+
+  afterAll(async () => {
+    await cleanupNanoTestResources(setupData.resources);
+  });
+
+  it("finds numeric-prefixed strings via decorated attributes and maintains consistent ordering", async () => {
+    const ascMatches = await numericRepo.find(queryValue, OrderDirection.ASC);
+    const descMatches = await numericRepo.find(queryValue, OrderDirection.DSC);
+
+    expect(ascMatches.map((record) => record.searchName)).toEqual(
+      expectedAscNames
+    );
+    expect(descMatches.map((record) => record.searchName)).toEqual(
+      expectedDescNames
+    );
+    expect(
+      ascMatches.every(
+        (record) =>
+          record.searchName?.startsWith(queryValue) ||
+          record.searchCode?.startsWith(queryValue)
+      )
+    ).toEqual(true);
+    expect(
+      descMatches.every(
+        (record) =>
+          record.searchName?.startsWith(queryValue) ||
+          record.searchCode?.startsWith(queryValue)
+      )
+    ).toEqual(true);
+    expect(
+      ascMatches.some((match) => match.searchName === "a1-Gamma")
+    ).toEqual(true);
+    expect(
+      ascMatches.some((match) => match.searchName === "foo10")
+    ).toEqual(true);
+    expect(
+      ascMatches.some((match) => match.searchName === "alpha10")
+    ).toEqual(false);
+  });
+
+  it("pages numeric-prefixed data across sequential page offsets", async () => {
+    const pageLimit = 2;
+    const expectedAscPages = [
+      ["10Start", "1Alpha"],
+      ["1Beta", "1Zeta"],
+      ["a1-Gamma", "foo10"],
+    ];
+
+    const repoPage1 = await numericRepo.page(queryValue, OrderDirection.ASC, {
+      offset: 1,
+      limit: pageLimit,
+    });
+    const pageOneLastId = repoPage1.data[repoPage1.data.length - 1].id as number;
+    const repoPage2 = await numericRepo.page(
+      queryValue,
+      OrderDirection.ASC,
+      {
+        limit: pageLimit,
+        bookmark: pageOneLastId,
+      },
+      bookmarkCtx
+    );
+    const pageTwoLastId = repoPage2.data[repoPage2.data.length - 1].id as number;
+    const repoPage3 = await numericRepo.page(
+      queryValue,
+      OrderDirection.ASC,
+      {
+        limit: pageLimit,
+        bookmark: pageTwoLastId,
+      },
+      bookmarkCtx
+    );
+
+    const repoAscNames = [
+      repoPage1.data.map((record) => record.searchName),
+      repoPage2.data.map((record) => record.searchName),
+      repoPage3.data.map((record) => record.searchName),
+    ];
+
+    expect(repoAscNames).toEqual(expectedAscPages);
+  });
+
+  it("pages numeric defaults in both directions with consistent metadata", async () => {
+    const pageLimit = 2;
+    const ascPage = await numericRepo.page(queryValue, OrderDirection.ASC, {
+      offset: 1,
+      limit: pageLimit,
+    });
+
+    expect(ascPage.current).toEqual(1);
+    expect(ascPage.count).toEqual(expectedAscNames.length);
+    expect(ascPage.total).toEqual(Math.ceil(expectedAscNames.length / pageLimit));
+    expect(ascPage.data.map((record) => record.searchName)).toEqual(
+      expectedAscNames.slice(0, pageLimit)
+    );
+
+    const pageOneLastId = ascPage.data[ascPage.data.length - 1].id as number;
+    const ascPageTwo = await numericRepo.page(
+      queryValue,
+      OrderDirection.ASC,
+      {
+        limit: pageLimit,
+        bookmark: pageOneLastId,
+      },
+      bookmarkCtx
+    );
+    expect(ascPageTwo.data.map((record) => record.searchName)).toEqual(
+      expectedAscNames.slice(pageLimit, pageLimit * 2)
+    );
+
+    const descPage = await numericRepo.page(queryValue, OrderDirection.DSC, {
+      offset: 1,
+      limit: pageLimit,
+    });
+    expect(descPage.current).toEqual(1);
+    expect(descPage.count).toEqual(expectedAscNames.length);
+    expect(descPage.total).toEqual(Math.ceil(expectedAscNames.length / pageLimit));
+    expect(descPage.data.map((record) => record.searchName)).toEqual(
+      expectedDescNames.slice(0, pageLimit)
+    );
   });
 });

@@ -232,7 +232,19 @@ describe("Nano task engine integration", () => {
 
     const statusPayloads = taskEvents
       .filter((evt) => evt.classification === TaskEventType.STATUS)
-      .map((evt) => evt.payload?.status);
+      .map((evt) => {
+        const payload = evt.payload;
+        if (!payload) return undefined;
+        if (typeof payload === "string") {
+          try {
+            return JSON.parse(payload);
+          } catch {
+            return undefined;
+          }
+        }
+        return payload;
+      })
+      .map((payload) => (payload as any)?.status);
     expect(statusPayloads).toContain(TaskStatus.SUCCEEDED);
   });
 

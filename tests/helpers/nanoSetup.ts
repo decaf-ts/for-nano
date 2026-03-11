@@ -9,7 +9,7 @@ export async function setupNanoAdapter(prefix: string) {
     host: resources.host,
     dbName: resources.dbName,
     protocol: resources.protocol,
-  });
+  }, resources.dbName);
   await adapter.initialize();
   return { resources, adapter };
 }

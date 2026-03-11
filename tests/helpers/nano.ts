@@ -56,5 +56,4 @@ export async function cleanupNanoTestResources(
   } finally {
     NanoAdapter.closeConnection(connection);
   }
-  await waitForCleanup(cleanupDelayMs);
 }
