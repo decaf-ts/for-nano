@@ -21,6 +21,7 @@ import Nano, {
   DocumentBulkResponse,
   DocumentGetResponse,
   DocumentInsertResponse,
+  DocumentListResponse,
   DocumentScope,
   MaybeDocument,
   ServerScope,
@@ -415,7 +416,11 @@ export class NanoAdapter extends CouchDBAdapter<
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>> {
-    const _id = this.generateId(Model.tableName(tableName), id);
+    const { ctx } = this.logCtx(args, this.read);
+    const _id = this.generateId(Model.tableName(tableName), id, {
+      clazz: tableName,
+      ctx,
+    });
     let record: DocumentGetResponse;
     try {
       record = await this.client.get(_id);
@@ -457,8 +462,13 @@ export class NanoAdapter extends CouchDBAdapter<
     ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>[]> {
     const table = Model.tableName(tableName);
+    const { ctx } = this.logCtx(args, this.readAll);
     const results = await this.client.fetch(
-      { keys: ids.map((id) => this.generateId(table, id as any)) },
+      {
+        keys: ids.map((id) =>
+          this.generateId(table, id as any, { clazz: tableName, ctx })
+        ),
+      },
       {}
     );
     return results.rows.map((r) => {
@@ -567,7 +577,11 @@ export class NanoAdapter extends CouchDBAdapter<
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>> {
-    const _id = this.generateId(Model.tableName(tableName), id);
+    const { ctx } = this.logCtx(args, this.delete);
+    const _id = this.generateId(Model.tableName(tableName), id, {
+      clazz: tableName,
+      ctx,
+    });
     let record: DocumentGetResponse;
     try {
       record = await this.client.get(_id);
@@ -591,9 +605,11 @@ export class NanoAdapter extends CouchDBAdapter<
 
     ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<Record<string, any>[]> {
-    const { log } = this.logCtx(args, this.deleteAll);
+    const { log, ctx } = this.logCtx(args, this.deleteAll);
     const table = Model.tableName(tableName);
-    const keys = ids.map((id) => this.generateId(table, id as any));
+    const keys = ids.map((id) =>
+      this.generateId(table, id as any, { clazz: tableName, ctx })
+    );
     const results = await this.client.fetch({ keys }, { include_docs: true });
 
     const docs = results.rows.map((row, index) => {
@@ -637,10 +653,14 @@ export class NanoAdapter extends CouchDBAdapter<
     docsOnly = true,
     ...args: ContextualArgs<Context<NanoFlags>>
   ): Promise<R> {
+    const { ctx, log } = this.logCtx(args, this.raw);
+    const nativePlan = this.resolveNativeIndexPlan(rawInput, ctx);
+    if (nativePlan) {
+      return (await this.executeNativeQuery<R>(nativePlan, docsOnly)) as R;
+    }
     try {
       const response: MangoResponse<R> = await this.client.find(rawInput);
       if (response.warning) {
-        const { log } = this.logCtx(args, this.raw);
         log.for(this.raw).warn(response.warning);
       }
       if (docsOnly) return response.docs as R;
@@ -648,6 +668,27 @@ export class NanoAdapter extends CouchDBAdapter<
     } catch (e: any) {
       throw this.parseError(e);
     }
+  }
+
+  private async executeNativeQuery<R>(
+    plan: NativeIndexPlan,
+    docsOnly: boolean
+  ): Promise<R> {
+    const response: DocumentListResponse<any> = await this.client.list({
+      include_docs: true,
+      startkey: plan.startkey,
+      endkey: plan.endkey,
+      inclusive_end: plan.inclusiveEnd,
+      descending: plan.descending,
+      limit: plan.limit,
+      skip: plan.skip,
+    });
+    const docs =
+      response.rows
+        .map((row) => row.doc)
+        .filter((doc): doc is any => !!doc) || [];
+    if (docsOnly) return docs as R;
+    return { docs } as MangoResponse<R>;
   }
 
   async view<R>(

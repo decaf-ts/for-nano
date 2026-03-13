@@ -3,6 +3,7 @@ import { NanoAdapter } from "../../src/adapter";
 import { CouchDBKeys } from "@decaf-ts/for-couchdb";
 import { PersistenceKeys, Context } from "@decaf-ts/core";
 import { Logging } from "@decaf-ts/logging";
+import { NanoFlags } from "../../src/types";
 
 function makeAdapter(overrides: any = {}) {
   const cfg = { user: "u", password: "p", host: "h", dbName: "db" } as any;
@@ -21,10 +22,12 @@ function makeAdapter(overrides: any = {}) {
   return adp as any as NanoAdapter;
 }
 
-function ctx() {
+function ctx(overrides: Partial<NanoFlags> = {}) {
   return new Context().accumulate({
     logger: Logging.get(),
     operation: OperationKeys.CREATE,
+    nativeIndexing: false,
+    ...overrides,
   } as any);
 }
 

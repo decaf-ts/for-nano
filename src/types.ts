@@ -1,4 +1,4 @@
-import { AdapterFlags } from "@decaf-ts/core";
+import { CouchDBFlags } from "@decaf-ts/for-couchdb";
 
 /**
  * @description Configuration flags for Nano database operations
@@ -6,7 +6,7 @@ import { AdapterFlags } from "@decaf-ts/core";
  * @interface NanoFlags
  * @memberOf module:for-nano
  */
-export interface NanoFlags extends AdapterFlags {
+export interface NanoFlags extends CouchDBFlags {
   /**
    * @description User authentication information for Nano database connections
    */

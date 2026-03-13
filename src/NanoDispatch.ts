@@ -6,7 +6,11 @@ import {
   RequestError,
 } from "nano";
 import { InternalError, OperationKeys } from "@decaf-ts/db-decorators";
-import { CouchDBKeys, MangoQuery } from "@decaf-ts/for-couchdb";
+import {
+  CouchDBKeys,
+  MangoQuery,
+  reconstructPrimaryKeyFromIdParts,
+} from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";
 import { NanoConfig, NanoFlags } from "./types";
 
@@ -146,10 +150,23 @@ export class NanoDispatch extends Dispatch<
             return;
           }
           const r = rec as DatabaseChangesResultItem;
-          const [table, id] = r.id.split(CouchDBKeys.SEPARATOR);
+          const [table, ...keyArgs] = r.id.split(CouchDBKeys.SEPARATOR);
+          if (!table) return;
+          const modelCtor = this.models?.find(
+            (ctor) => Model.tableName(ctor) === table
+          );
+          let idValue: string;
+          if (modelCtor && keyArgs.length) {
+            const pkAttr = Model.pk(modelCtor);
+            idValue =
+              reconstructPrimaryKeyFromIdParts(modelCtor, pkAttr, keyArgs) ||
+              keyArgs.join(CouchDBKeys.SEPARATOR);
+          } else {
+            idValue = keyArgs.join(CouchDBKeys.SEPARATOR);
+          }
           return {
             table: table,
-            id: id,
+            id: idValue,
             operation: r.deleted
               ? OperationKeys.DELETE
               : r.changes[r.changes.length - 1].rev.split("-")[0] === "1"
