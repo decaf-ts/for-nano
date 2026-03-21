@@ -17,7 +17,7 @@
     "flash-forward": "npx npm-check-updates -u && npm run do-install",
     "reset": "rm -rf * && git checkout . && git pull && npm run do-install",
     "build": "npx build-scripts --dev",
-    "build:prod": "npx build-scripts --prod",
+    "build:prod": "npx decaf build --prod",
     "test": "jest --runInBand --coverage --detectOpenHandles",
     "test:unit": "jest --testPathPatterns=\"/tests/unit\" --passWithNoTests --detectOpenHandles",
     "test:integration": "jest --testPathPatterns=\"/tests/(integration)\" --passWithNoTests --detectOpenHandles",
@@ -32,7 +32,7 @@
     "clean-publish": "npx clean-publish",
     "drawings": "for FILE in workdocs/drawings/*.drawio; do echo \"converting $FILE to image...\" && docker run --rm -v $(pwd):/data rlespinasse/drawio-export --format png $FILE; done && cp -rf workdocs/drawings/export/* workdocs/resources/",
     "uml": "cd workdocs/uml && for FILE in ./*.puml; do docker run --rm -v $(pwd):/work -w /work miy4/plantuml -DPLANTUML_LIMIT_SIZE=8192 -tpng $FILE; done && cd ../.. && cp -fr workdocs/uml/*.png workdocs/resources/",
-    "docs": "npx rimraf ./docs && mkdir docs && npx build-scripts --docs",
+    "docs": "npx rimraf ./docs && mkdir docs && npx decaf build --docs",
     "publish-docs": "docker run -it --rm --user $(id -u):$(id -g) -v \"$(pwd)/workdocs/confluence:/content\" -e ATLASSIAN_API_TOKEN=$(cat .confluence-token) ghcr.io/markdown-confluence/publish:latest",
     "repo:init": "codex exec \"$(cat ./.codex/prompts/repo-setup.md)\nbase_path is `./`, initialize the repository\"",
     "repo:setup": "codex exec \"$(cat ./.codex/prompts/repo-setup.md)\nbase_path is ./\"",
@@ -74,6 +74,7 @@
   },
   "homepage": "https://github.com/decaf-ts/for-couchdb#readme",
   "devDependencies": {
+    "@decaf-ts/cli": "latest",
     "@decaf-ts/utils": "latest",
     "@types/jest": "^30.0.0"
   },
@@ -87,10 +88,5 @@
     "@decaf-ts/logging": "latest",
     "@decaf-ts/transactional-decorators": "latest",
     "nano": "^10.1.4"
-  },
-  "overrides": {
-    "minimatch": "^10.2.3",
-    "test-exclude": "^7.0.1",
-    "serialize-javascript": "^7.0.3"
   }
 }
