@@ -1,4 +1,4 @@
-import { Repository, PersistenceService } from "@decaf-ts/core";
+import { PersistenceService } from "@decaf-ts/core";
 import {
   TaskBackoffModel,
   TaskEventBus,
@@ -75,15 +75,7 @@ describe("TaskService multi-db routing", () => {
     ]);
     [mainAdapter] = client;
 
-    const mainRepo = Repository.forModel(TaskModel, mainAdapter.alias);
-    await mainRepo.create(buildTask("primary-task"));
-
     taskService = new TaskService<NanoAdapter>();
-    const placeholderRepo = Repository.forModel(TaskModel, mainAdapter.alias);
-    Object.defineProperty(taskService, "repo", {
-      value: placeholderRepo,
-      configurable: true,
-    });
     await taskService.boot({
       adapter: mainAdapter,
       bus: new TaskEventBus(),
@@ -104,15 +96,16 @@ describe("TaskService multi-db routing", () => {
         dbName: tasksDbName,
       } as any,
     });
-    const overrideRepo = placeholderRepo.override({
-      user: tasksUser,
-      password: tasksPassword,
-      dbName: tasksDbName,
-    } as any);
-    Object.defineProperty(taskService, "repo", {
-      value: overrideRepo,
-      configurable: true,
+    const primaryTask = new TaskModel({
+      classification: "primary-task",
+      maxAttempts: 3,
+      backoff: new TaskBackoffModel(),
+      createdBy: "system",
+      updatedBy: "system",
     });
+    const primaryDoc = JSON.parse(primaryTask.serialize());
+    delete primaryDoc.__model;
+    await adminConnection.db.use(resources.dbName).insert(primaryDoc);
   });
 
   afterAll(async () => {
@@ -133,12 +126,14 @@ describe("TaskService multi-db routing", () => {
   });
 
   it("persists tasks using overrides to a dedicated tasks database", async () => {
-    const mainRepo = Repository.forModel(TaskModel, mainAdapter.alias);
     const created = await taskService.create(buildTask("service-task"));
 
-    const mainRecords = await mainRepo.select().execute();
+    const mainDb = adminConnection.db.use(resources.dbName);
+    const mainDocs = await mainDb.list({ include_docs: true });
     expect(
-      mainRecords.some((record) => record.classification === "primary-task")
+      mainDocs.rows.some(
+        (row) => row.doc && row.doc.classification === "primary-task"
+      )
     ).toBe(true);
 
     const tasksDb = adminConnection.db.use(tasksDbName);

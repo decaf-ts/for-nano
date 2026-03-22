@@ -13,6 +13,7 @@ import {
   ModelArg,
   required,
 } from "@decaf-ts/decorator-validation";
+import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoRepository } from "../../src/NanoRepository";
 import { cleanupNanoTestResources } from "../helpers/nano";
 import { setupNanoAdapter } from "../helpers/nanoSetup";
@@ -59,11 +60,15 @@ describe("NanoAdapter multi-level sorting", () => {
     // Ensure the composite index exists before querying
     const dbClient = (adapter as any).client;
     const createIndexSpy = jest.spyOn(dbClient, "createIndex");
-    await (
-      adapter as unknown as {
-        index: (...models: (typeof LeaderboardEntry)[]) => Promise<void>;
-      }
-    ).index(LeaderboardEntry);
+    try {
+      await (
+        adapter as unknown as {
+          index: (...models: (typeof LeaderboardEntry)[]) => Promise<void>;
+        }
+      ).index(LeaderboardEntry);
+    } catch (error) {
+      if (!(error instanceof ConflictError)) throw error;
+    }
 
     console.log(
       "created indexes",

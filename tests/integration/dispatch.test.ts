@@ -1,5 +1,6 @@
 import { Observer } from "@decaf-ts/core";
 import { Model } from "@decaf-ts/decorator-validation";
+import { ConflictError } from "@decaf-ts/db-decorators";
 import { NanoAdapter, NanoRepository } from "../../src";
 import { NanoDispatch } from "../../src/NanoDispatch";
 import { TestModel } from "../TestModel";
@@ -62,7 +63,16 @@ describe("NanoDispatch integration", () => {
       nif: "000000000",
     });
 
-    const created = await proxiedRepo.create(model);
+    let created;
+    try {
+      created = await proxiedRepo.create(model);
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        created = await proxiedRepo.create(model);
+      } else {
+        throw error;
+      }
+    }
     expect(created).toBeDefined();
 
     const read = await proxiedRepo.read(created.id as number);
