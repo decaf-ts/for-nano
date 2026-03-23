@@ -16,8 +16,12 @@ export class NanoRepository<M extends Model> extends CouchDBRepository<
   M,
   NanoAdapter
 > {
-  constructor(adapter: NanoAdapter, model: Constructor<M>) {
-    super(adapter, model);
+  constructor(
+    adapter: NanoAdapter,
+    model: Constructor<M>,
+    force: boolean = false
+  ) {
+    super(adapter, model, force);
   }
 
   override override(flags: Partial<FlagsOf<ContextOf<NanoAdapter>>>) {
