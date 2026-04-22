@@ -641,7 +641,20 @@ export class NanoAdapter extends CouchDBAdapter<
       const response: MangoResponse<R> = await this.client.find(rawInput);
       if (response.warning) {
         const { log } = this.logCtx(args, this.raw);
-        log.for(this.raw).warn(response.warning);
+        // Nano/CouchDB warnings here usually mean "no matching index found".
+        // Include the query details to make it actionable when it happens.
+        const details = {
+          warning: response.warning,
+          selector: rawInput?.selector,
+          sort: rawInput?.sort,
+          use_index: (rawInput as any)?.use_index,
+          fields: rawInput?.fields,
+          limit: rawInput?.limit,
+          skip: rawInput?.skip,
+        };
+        log.warn(
+          `${response.warning} query=${JSON.stringify(details, null, 2)}`
+        );
       }
       if (docsOnly) return response.docs as R;
       return response as R;
