@@ -3,6 +3,7 @@ import { LogLevel, Logging } from "@decaf-ts/logging";
 import { Repository, Repo } from "@decaf-ts/core";
 import { Observer } from "@decaf-ts/core/interfaces";
 import {
+  CompositeTaskBuilder,
   TaskBuilder,
   TaskContext,
   TaskEventBus,
@@ -84,6 +85,57 @@ class NanoProgressTask extends TaskHandler<{ value: number }, number> {
   }
 }
 
+@task("nano-dynamic-enqueue")
+class NanoDynamicEnqueueTask extends TaskHandler<{ seed?: number } | void, number> {
+  static runs: Record<string, number> = {};
+
+  async run(input: { seed?: number } | void, ctx: TaskContext) {
+    NanoDynamicEnqueueTask.runs[ctx.taskId] =
+      (NanoDynamicEnqueueTask.runs[ctx.taskId] ?? 0) + 1;
+    const parsed = parseNumberInput((input as any)?.seed ?? 5);
+    await ctx
+      .scheduleSteps(
+        {
+          classification: "nano-dynamic-flaky",
+        },
+        {
+          classification: "nano-dynamic-tail",
+        }
+      )
+      .afterCurrent();
+    return parsed;
+  }
+}
+
+@task("nano-dynamic-flaky")
+class NanoDynamicFlakyTask extends TaskHandler<void, number> {
+  static runs: Record<string, number> = {};
+
+  async run(_: void, ctx: TaskContext) {
+    const run = (NanoDynamicFlakyTask.runs[ctx.taskId] ?? 0) + 1;
+    NanoDynamicFlakyTask.runs[ctx.taskId] = run;
+    const cache = ctx.resultCache ?? {};
+    const seed = cache[`${ctx.taskId}:step:0`];
+    if (typeof seed !== "number") throw new Error("missing seed cache");
+    if (run === 1) throw new Error("intentional dynamic flaky failure");
+    return seed + 1;
+  }
+}
+
+@task("nano-dynamic-tail")
+class NanoDynamicTailTask extends TaskHandler<void, number> {
+  static runs: Record<string, number> = {};
+
+  async run(_: void, ctx: TaskContext) {
+    NanoDynamicTailTask.runs[ctx.taskId] =
+      (NanoDynamicTailTask.runs[ctx.taskId] ?? 0) + 1;
+    const cache = ctx.resultCache ?? {};
+    const prev = cache[`${ctx.taskId}:step:1`];
+    if (typeof prev !== "number") throw new Error("missing flaky cache");
+    return prev + 1;
+  }
+}
+
 describe("Nano task engine integration", () => {
   let adapter: NanoAdapter;
   let resources: NanoResources | undefined;
@@ -153,6 +205,20 @@ describe("Nano task engine integration", () => {
       (evt) =>
         evt && evt.taskId === taskId && (!type || evt.classification === type)
     );
+
+  const waitForTaskStatus = async (
+    id: string,
+    status: TaskStatus,
+    timeout = 30000
+  ) => {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      const task = await taskRepo.read(id);
+      if (task.status === status) return task;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(`Task ${id} did not reach ${status} within ${timeout}ms`);
+  };
 
   it("executes a task and logs status events", async () => {
     const toSubmit = new TaskBuilder()
@@ -296,5 +362,46 @@ describe("Nano task engine integration", () => {
     } finally {
       infoSpy.mockRestore();
     }
+  });
+
+  it("persists dynamically added steps across retry and emits tracker update events", async () => {
+    NanoDynamicEnqueueTask.runs = {};
+    NanoDynamicFlakyTask.runs = {};
+    NanoDynamicTailTask.runs = {};
+
+    const updateEvents: TaskEventModel[] = [];
+    const task = new CompositeTaskBuilder()
+      .setClassification("nano-dynamic-chain")
+      .setMaxAttempts(2)
+      .addStep("nano-dynamic-enqueue", { seed: 7 })
+      .build();
+
+    const { task: pushed, tracker } = await engine.push(task, true);
+    tracker.onUpdate(async (evt) => {
+      updateEvents.push(evt);
+    });
+
+    const waitingRetry = await waitForTaskStatus(
+      pushed.id,
+      TaskStatus.WAITING_RETRY
+    );
+    expect(waitingRetry.currentStep).toBe(1);
+    expect(waitingRetry.steps?.map((step) => step.classification)).toEqual([
+      "nano-dynamic-enqueue",
+      "nano-dynamic-flaky",
+      "nano-dynamic-tail",
+    ]);
+
+    const output = await tracker.resolve();
+    expect(output.stepResults.length).toBe(3);
+    expect(output.stepResults[0].output).toBe(7);
+    expect(output.stepResults[1].output).toBe(8);
+    expect(output.stepResults[2].output).toBe(9);
+
+    expect(NanoDynamicEnqueueTask.runs[pushed.id]).toBe(1);
+    expect(NanoDynamicFlakyTask.runs[pushed.id]).toBe(2);
+    expect(NanoDynamicTailTask.runs[pushed.id]).toBe(1);
+    expect(updateEvents.length).toBeGreaterThan(0);
+    expect(updateEvents[0].classification).toBe(TaskEventType.UPDATE);
   });
 });
