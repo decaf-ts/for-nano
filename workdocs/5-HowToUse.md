@@ -200,6 +200,55 @@ await NanoAdapter.createDatabase(url, "mydb");
 
 
 
+## Live migration workflow
+
+Migration integration suites run against live CouchDB instances. `for-nano` tests are intentionally limited to `RamAdapter` + `NanoAdapter` so they stay independent of SQL modules. That means:
+
+- Every migration must add a new required property/column and backfill every existing document with the default value before continuing.
+- Use `MigrationService.migrateAdapters([nanoAdapter], config)` with flavour-scoped handlers so the last executed version is persisted independently per adapter.
+- If you turn on `taskMode`, boot a separate `RamAdapter` (alias distinct from the ones being migrated) before you create the `TaskService`. The migration guard throws if the task engine adapter alias is also a migration target.
+
+```ts
+@migration("1.1.0-add-isActive", {
+  precedence: "1.1.0",
+  flavour: "nano",
+})
+export class AddIsActiveMigration implements Migration<any, NanoAdapter> {
+  async up(_, adapter) {
+    const repo = new Repository(adapter, UserModel);
+    const users = await repo.select().execute();
+    await Promise.all(
+      users.map((user) => repo.update({ ...user, isActive: true }))
+    );
+  }
+}
+```
+
+```ts
+const migrations = await MigrationService.migrateAdapters(
+  [nanoAdapter],
+  {
+    toVersion: "1.1.0",
+    flavours: ["nano"],
+    taskMode: true,
+    taskService,
+    handlers: {
+      nano: {
+        retrieveLastVersion: async (adapter) =>
+          (await versionRepo(adapter).read("nano"))?.version,
+        setCurrentVersion: async (version, adapter) =>
+          await versionRepo(adapter).upsert("nano", { version }),
+      },
+    },
+  }
+);
+for (const migration of migrations) {
+  await migration.track();
+}
+```
+
+Use `MigrationRule`s (the `rules` array in `@migration`) to gate execution based on adapter state. Keep every migration focused on one version jump so the live suites can always rerun and verify the required schema change and backfill.
+
 ## Coding Principles
 
 - group similar functionality in folders (analog to namespaces but without any namespace declaration)
