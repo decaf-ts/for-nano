@@ -197,6 +197,52 @@ await NanoAdapter.createDatabase(url, "mydb");
 // ... createUser/deleteUser, deleteDatabase, etc.
 ```
 
+## Task Engine guardrails for migration orchestration
+
+Migration command runners and the integration tests rely on a dedicated `RamAdapter` task engine that never shares an alias with the adapters being migrated. `MigrationService.migrateAdapters` enforces this guardrail by comparing every adapter alias and rejecting runs where the task engine would also be a migration target. Keep your task engine adapter isolated (for example `new RamAdapter({}, "decaf-cli-task-engine")`) and set `concurrency: 1` so version steps stay sequential.
+
+```ts
+import { RamAdapter } from "@decaf-ts/core/ram";
+import { TaskService } from "@decaf-ts/core/tasks";
+
+const taskEngineAdapter = new RamAdapter({}, "decaf-cli-task-engine");
+const taskService = new TaskService();
+await taskService.boot({
+  adapter: taskEngineAdapter,
+  workerId: "nano-migration-worker",
+  leaseMs: 10_000,
+  logTailMax: 250,
+});
+```
+
+Reserve `leaseMs` for longer-running migrations, tune `pollMsBusy`/`pollMsIdle`, and attach a `TaskEventBus` if you want progress logs in the CLI output. `taskService.track(taskId)` can then stream the same progress/log events that the integration tests already observe.
+
+## Migration lifecycle and @migration semantics for Nano
+
+`@migration` metadata controls ordering and flavour targeting:
+
+```ts
+@migration("1.1.0-add-category-field", {
+  precedence: "1.1.0",
+  flavour: "nano",
+  rules: [
+    async (_, adapter) => Boolean(await adapter.exists("for_nano_migration_products")),
+  ],
+})
+class AddCategoryMigration extends AbsMigration<NanoAdapter> { ... }
+```
+
+- `reference`: the canonical label (usually the semver string) used for logging, precedence tokens, and version normalization.
+- `precedence`: a constructor, reference string, or object pointing to another migration to force ordering when version/flavour collide.
+- `flavour`: limits execution to the Nano flavour (the for-nano tests only execute Nano-scoped migrations).
+- `rules`: async predicates `(qr, adapter, ctx)` that gate execution; a `false` result skips the migration without failing the run.
+
+`MigrationService` also expects handlers for `retrieveLastVersion` and `setCurrentVersion`. These functions are invoked per flavour so you can persist the head (e.g., in a `VersionRepo`). During the live integration test we initialize the version map at `"1.0.0"` and let `setCurrentVersion` advance it to the target version once the required property addition/backfill completes.
+
+Use `MigrationService.migrateAdapters([nanoAdapter], { toVersion: "2.0.0", handlers: {...}, taskMode: true, taskService })` once your `NanoAdapter` is initialized. `taskMode: true` queues one `CompositeTask` per version and calls `setCurrentVersion` immediately after each task resolves, which keeps the persistent version marker aligned with the latest fully applied hop. Normal mode updates the version only after the whole batch finishes.
+
+`MigrationService.retry(taskId)` rewrites the failed `TaskModel` to `PENDING`, clears `error`, `leaseOwner`, and timestamps, and re-enqueues the same version so the CLI can resume from the failing point. Because the version marker wasn't advanced for the failed task, rerunning the CLI with the same `toVersion` continues at the correct semantic boundary. Our tests ensure that every migration adds a required property/column and fills existing documents with the default value before the next version runs.
+
 
 
 
@@ -246,6 +292,17 @@ for (const migration of migrations) {
   await migration.track();
 }
 ```
+
+`MigrationService` starts by calling the flavour-specific `retrieveLastVersion` handler so it knows which version the database already holds, then filters decorated migrations whose normalized versions are strictly greater than `currentVersion` and less than or equal to `toVersion`. `setCurrentVersion` is invoked after every successfully completed version: inline runs update once at the very end, while task mode updates immediately after each tracked `CompositeTask`. This guarantees the recorded `currentVersion` always equals the last fully finished hop, so rerunning the command will skip completed versions and replay only the pending ones. When a task fails, call `MigrationService.retry(taskId)` (optionally `taskService.track(id)` to observe progress) to reset the `TaskModel` to `PENDING`, clear its error/lease metadata, and let the TaskEngine reclaim the same version without revisiting already finished steps.
+
+The `@migration` decorator handles ordering and targeting. The key arguments are:
+
+- `reference`: the name/semver label used in logs and dependency graphs.
+- `precedence`: optional hint (a constructor, string, or object) that the sorter uses when two migrations share the same version and flavour.
+- `flavour`: restricts the migration to one adapter flavour (`"nano"`, `"type-orm"`, etc.). Omit it for generic migrations or to let `includeGenericInTaskMode` decide when to run.
+- `rules`: async predicates that gate execution (`(qr, adapter, ctx) => Promise<boolean>`). When a rule returns `false` the migration is skipped without error.
+
+The CLI migrations guard enforces that the `TaskEngine` runs on a separate `RamAdapter` alias that is never one of the migrating adapters, keeping persistence targets isolated and preventing lease conflicts.
 
 Use `MigrationRule`s (the `rules` array in `@migration`) to gate execution based on adapter state. Keep every migration focused on one version jump so the live suites can always rerun and verify the required schema change and backfill.
 
