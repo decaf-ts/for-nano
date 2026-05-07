@@ -23,8 +23,7 @@
     // "outFile": "./",                             /* Concatenate and emit output to single file. */
     "outDir": "lib" /* Redirect output structure to the directory. */,
     "rootDirs": [
-      "src",
-      "tests"
+      "src"
     ] /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */,
     // "composite": true,                           /* Enable project compilation */
     // "tsBuildInfoFile": "./",                     /* Specify file to store incremental compilation information */
@@ -74,6 +73,7 @@
     /* Experimental Options */
     "experimentalDecorators": true /* Enables experimental support for ES7 decorators. */,
     "emitDecoratorMetadata": true /* Enables experimental support for emitting type metadata for decorators. */,
+    "types": ["node", "jest"],
 
     /* Advanced Options */
     "resolveJsonModule": true /* Include modules imported with '.json' extension */,

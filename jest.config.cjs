@@ -3,7 +3,7 @@ const config = {
   // eslint-disable-next-line no-undef
   rootDir: __dirname,
   transform: {
-    "^.+\\.ts$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.tests.json" }],
+    "^.+\\.ts$": ["ts-jest"],
   },
   testEnvironment: "node",
   testRegex: "/tests/.*\\.(test|spec)\\.(ts|tsx)$",

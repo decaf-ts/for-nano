@@ -1,5 +1,8 @@
-import { Adapter } from "@decaf-ts/core";
-import { AbsMigration, migration, MigrationService } from "@decaf-ts/core/migrations";
+import {
+  AbsMigration,
+  migration,
+  MigrationService,
+} from "@decaf-ts/core/migrations";
 import { NanoAdapter } from "../../src";
 import {
   cleanupNanoTestResources,
@@ -8,14 +11,6 @@ import {
 
 const TEST_FLAVOUR = "nano-live-migration-add-property";
 const TABLE = "for_nano_migration_products";
-
-class LiveNanoAdapter extends NanoAdapter {
-  constructor(conf: any, alias?: string) {
-    super(conf, alias);
-    (this as any).flavour = TEST_FLAVOUR;
-    (Adapter as any)._cache[TEST_FLAVOUR] = this;
-  }
-}
 
 @migration("1.1.0-for-nano-live-add-category", "1.1.0", TEST_FLAVOUR)
 class AddCategoryMigration extends AbsMigration<any> {
@@ -81,8 +76,10 @@ void RemoveLegacyMigration;
 
 describe("for-nano migration property add/delete flow", () => {
   it("applies property additions/removals against a live CouchDB instance", async () => {
-    const resources = await createNanoTestResources("for_nano_migration_add_prop");
-    const adapter = new LiveNanoAdapter(
+    const resources = await createNanoTestResources(
+      "for_nano_migration_add_prop"
+    );
+    const adapter = new NanoAdapter(
       {
         user: resources.user,
         password: resources.password,

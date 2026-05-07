@@ -197,9 +197,9 @@ describe("NanoAdapter static helpers", () => {
     await expect(
       NanoAdapter.createDatabase(con as any, "db")
     ).rejects.toThrow();
-    await expect(
-      NanoAdapter.deleteDatabase(con as any, "db")
-    ).rejects.toThrow(InternalError);
+    await expect(NanoAdapter.deleteDatabase(con as any, "db")).rejects.toThrow(
+      InternalError
+    );
     NanoAdapter.closeConnection(con);
   });
 
@@ -285,7 +285,6 @@ describe("NanoAdapter additional coverage", () => {
 
 // createdByOnNanoCreateUpdate helper
 import { createdByOnNanoCreateUpdate } from "../../src/adapter";
-import type { Context } from "@decaf-ts/db-decorators";
 
 describe("createdByOnNanoCreateUpdate", () => {
   test("sets created_by from context user", async () => {
