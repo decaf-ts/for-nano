@@ -56,8 +56,7 @@ describe("TaskModel and TaskEventModel repositories", () => {
         host: resources.host,
         dbName: resources.dbName,
         protocol: resources.protocol,
-      },
-      resources.dbName
+      }
     );
     taskRepo = Repository.forModel(TaskModel, adapter.alias);
     eventRepo = Repository.forModel(TaskEventModel, adapter.alias);

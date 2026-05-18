@@ -77,6 +77,7 @@ describe("@index composite properties on nano", () => {
       },
       resources.dbName
     );
+    uses(adapter.alias)(IndexedRunnableTask);
     await adapter.initialize();
     repo = new NanoRepository(adapter, IndexedRunnableTask);
   });

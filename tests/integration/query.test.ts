@@ -4,6 +4,7 @@ import { nanoRepository } from "../helpers/repository";
 import { setupNanoAdapter } from "../helpers/nanoSetup";
 
 import {
+  Adapter,
   BaseModel,
   Condition,
   Context,
@@ -218,6 +219,8 @@ describe("default query statements on nano", () => {
 
   beforeAll(async () => {
     setupData = await setupNanoAdapter("default_query_strings");
+    uses(setupData.resources.dbName)(DefaultStringQueryModel);
+    await setupData.adapter.initialize();
     stringRepo = new NanoRepository(setupData.adapter, DefaultStringQueryModel);
     const models = [
       new DefaultStringQueryModel({ attr1: "apple", attr2: "zebra" }),
@@ -231,6 +234,8 @@ describe("default query statements on nano", () => {
   });
 
   afterAll(async () => {
+    Adapter.unregister(setupData.resources.dbName);
+    await setupData.adapter.shutdown().catch(() => undefined);
     await cleanupNanoTestResources(setupData.resources);
   });
 
@@ -341,6 +346,8 @@ const expectedDescNames = [...expectedAscNames].reverse();
 
   beforeAll(async () => {
     setupData = await setupNanoAdapter("default_query");
+    uses(setupData.resources.dbName)(NumericSearchModel);
+    await setupData.adapter.initialize();
     numericRepo = new NanoRepository(setupData.adapter, NumericSearchModel);
     const models = [
       new NumericSearchModel({
@@ -380,6 +387,8 @@ const expectedDescNames = [...expectedAscNames].reverse();
   });
 
   afterAll(async () => {
+    Adapter.unregister(setupData.resources.dbName);
+    await setupData.adapter.shutdown().catch(() => undefined);
     await cleanupNanoTestResources(setupData.resources);
   });
 
