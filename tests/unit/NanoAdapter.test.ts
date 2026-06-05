@@ -39,6 +39,16 @@ describe("NanoAdapter core methods", () => {
     expect(res.user).toEqual({ name: "u" });
   });
 
+  test("flags preserves forceNamedIndexes overrides", async () => {
+    const adp = makeAdapter();
+    const res: any = await (adp as any).flags(
+      OperationKeys.CREATE,
+      class {},
+      { forceNamedIndexes: false }
+    );
+    expect(res.forceNamedIndexes).toBe(false);
+  });
+
   test("Dispatch returns NanoDispatch", () => {
     const adp = makeAdapter();
     const d = (adp as any).Dispatch();

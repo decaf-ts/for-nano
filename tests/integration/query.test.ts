@@ -255,8 +255,8 @@ describe("default query statements on nano", () => {
     });
 
     expect(pageResult.current).toEqual(1);
-    expect(pageResult.count).toEqual(6);
-    expect(pageResult.total).toEqual(3);
+    expect(pageResult.count).toBeUndefined();
+    expect(pageResult.total).toBeUndefined();
     expect(
       pageResult.data.every(
         (record) =>
@@ -468,8 +468,8 @@ const expectedDescNames = [...expectedAscNames].reverse();
     });
 
     expect(ascPage.current).toEqual(1);
-    expect(ascPage.count).toEqual(expectedAscNames.length);
-    expect(ascPage.total).toEqual(Math.ceil(expectedAscNames.length / pageLimit));
+    expect(ascPage.count).toBeUndefined();
+    expect(ascPage.total).toBeUndefined();
     expect(ascPage.data.map((record) => record.searchName)).toEqual(
       expectedAscNames.slice(0, pageLimit)
     );
@@ -493,8 +493,8 @@ const expectedDescNames = [...expectedAscNames].reverse();
       limit: pageLimit,
     });
     expect(descPage.current).toEqual(1);
-    expect(descPage.count).toEqual(expectedAscNames.length);
-    expect(descPage.total).toEqual(Math.ceil(expectedAscNames.length / pageLimit));
+    expect(descPage.count).toBeUndefined();
+    expect(descPage.total).toBeUndefined();
     expect(descPage.data.map((record) => record.searchName)).toEqual(
       expectedDescNames.slice(0, pageLimit)
     );

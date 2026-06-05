@@ -8,6 +8,10 @@ import { AdapterFlags } from "@decaf-ts/core";
  */
 export interface NanoFlags extends AdapterFlags {
   /**
+   * @description When true, automatically attach generated named CouchDB indexes
+   */
+  forceNamedIndexes?: boolean;
+  /**
    * @description User authentication information for Nano database connections
    */
   user: {
