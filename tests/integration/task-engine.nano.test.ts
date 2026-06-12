@@ -102,7 +102,7 @@ class NanoDynamicEnqueueTask extends TaskHandler<{ seed?: number } | void, numbe
           classification: "nano-dynamic-tail",
         }
       )
-      .afterCurrent();
+      .afterCurrent(ctx);
     return parsed;
   }
 }
