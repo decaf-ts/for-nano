@@ -100,5 +100,8 @@
     "@decaf-ts/logging": "latest",
     "@decaf-ts/transactional-decorators": "latest",
     "nano": "^10.1.4"
+  },
+  "overrides": {
+    "js-yaml": "^4.2.0"
   }
 }
