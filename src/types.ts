@@ -37,8 +37,8 @@ export interface NanoFlags extends AdapterFlags {
  * @memberOf module:for-nano
  */
 export type NanoConfig = {
-  user: string;
-  password: string;
+  couchUser: string;
+  couchPassword: string;
   host: string;
   dbName: string;
   protocol: "http" | "https";

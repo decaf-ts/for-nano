@@ -64,8 +64,8 @@ describe("TaskService multi-db routing", () => {
       [
         NanoAdapter,
         {
-          user: resources.user,
-          password: resources.password,
+          couchUser: resources.user,
+          couchPassword: resources.password,
           host: resources.host,
           dbName: resources.dbName,
           protocol: resources.protocol,
@@ -91,8 +91,8 @@ describe("TaskService multi-db routing", () => {
       loggingBufferTruncation: 10,
       gracefulShutdownMsTimeout: 4000,
       overrides: {
-        user: tasksUser,
-        password: tasksPassword,
+        couchUser: tasksUser,
+        couchPassword: tasksPassword,
         dbName: tasksDbName,
       } as any,
     });

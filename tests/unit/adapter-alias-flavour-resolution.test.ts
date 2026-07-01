@@ -17,8 +17,8 @@ describe("adapter alias vs flavour resolution", () => {
 
   it("resolves @uses(alias) models to adapter flavour handlers", () => {
     const conf = {
-      user: "nano-user",
-      password: "nano-pass",
+      couchUser: "nano-user",
+      couchPassword: "nano-pass",
       host: "127.0.0.1:5984",
       dbName: "nano-db",
       protocol: "http" as const,

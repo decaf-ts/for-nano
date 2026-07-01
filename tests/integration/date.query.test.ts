@@ -36,8 +36,8 @@ describe("Queries with dates", () => {
   beforeAll(async () => {
     resources = await createNanoTestResources("date_query");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

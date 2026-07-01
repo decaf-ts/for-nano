@@ -49,8 +49,8 @@ describe("for-nano adapter alias vs flavour createdBy resolution", () => {
   beforeAll(async () => {
     resources = await createNanoTestResources("alias_flavour_createdby");
     const conf = {
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

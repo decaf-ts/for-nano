@@ -63,8 +63,8 @@ describe("REGRESSION: column-mapped fields survive the query path (no double-rev
   beforeAll(async () => {
     resources = await createNanoTestResources("reg_double_revert");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

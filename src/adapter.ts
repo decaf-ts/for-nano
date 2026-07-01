@@ -182,9 +182,9 @@ export class NanoAdapter extends CouchDBAdapter<
    * @return {DocumentScope<any>} The ready-to-use Nano DocumentScope for the configured database
    */
   protected getClient() {
-    const { user, password, host, dbName, protocol } = this.config;
-    const con = NanoAdapter.connect(user, password, host, protocol);
-    return wrapDocumentScope(con, dbName, user, password);
+    const { couchUser, couchPassword, host, dbName, protocol } = this.config;
+    const con = NanoAdapter.connect(couchUser, couchPassword, host, protocol);
+    return wrapDocumentScope(con, dbName, couchUser, couchPassword);
   }
 
   /**
@@ -208,7 +208,7 @@ export class NanoAdapter extends CouchDBAdapter<
       Object.assign(
         {
           user: {
-            name: this.config.user,
+            name: flags.user?.name || this.config.couchUser,
           },
         },
         flags,

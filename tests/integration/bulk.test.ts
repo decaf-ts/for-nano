@@ -27,8 +27,8 @@ describe("Bulk operations", () => {
   beforeAll(async () => {
     resources = await createNanoTestResources("bulk");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

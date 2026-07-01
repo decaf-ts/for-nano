@@ -22,8 +22,8 @@ describe("repositories", () => {
     resources = await createNanoTestResources("repository");
     expect(resources.connection).toBeDefined();
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: "http",

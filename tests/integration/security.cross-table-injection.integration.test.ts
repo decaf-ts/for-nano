@@ -83,8 +83,8 @@ describe("SECURITY (regression): cross-table injection via @column('??table') is
   beforeAll(async () => {
     resources = await createNanoTestResources("sec_xtable_fix");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

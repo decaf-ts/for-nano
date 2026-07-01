@@ -80,8 +80,8 @@ describe("Queries", () => {
   beforeAll(async () => {
     resources = await createNanoTestResources("queries");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

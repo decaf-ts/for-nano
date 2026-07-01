@@ -87,8 +87,8 @@ describe("SECURITY (regression): cross-table dump via Statement.raw() is blocked
   beforeAll(async () => {
     resources = await createNanoTestResources("sec_rawdump_fix");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

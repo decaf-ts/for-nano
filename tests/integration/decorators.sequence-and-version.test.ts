@@ -48,8 +48,8 @@ describe("core decorators on nano adapter", () => {
     resources = await createNanoTestResources("decorators_seq_ver");
     adapter = new NanoAdapter(
       {
-        user: resources.user,
-        password: resources.password,
+        couchUser: resources.user,
+        couchPassword: resources.password,
         host: resources.host,
         dbName: resources.dbName,
         protocol: resources.protocol,

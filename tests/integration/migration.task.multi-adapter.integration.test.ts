@@ -141,8 +141,8 @@ describe("for-nano live multi-adapter migration", () => {
     const nanoResources = await createNanoTestResources("for_nano_multi");
     const nano = new LiveNanoAdapter(
       {
-        user: nanoResources.user,
-        password: nanoResources.password,
+        couchUser: nanoResources.user,
+        couchPassword: nanoResources.password,
         host: nanoResources.host,
         dbName: nanoResources.dbName,
         protocol: nanoResources.protocol,

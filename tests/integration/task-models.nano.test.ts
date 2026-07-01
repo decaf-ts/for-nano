@@ -51,8 +51,8 @@ describe("TaskModel and TaskEventModel repositories", () => {
     resources = await createNanoTestResources("task-models");
     adapter = new NanoAdapter(
       {
-        user: resources.user,
-        password: resources.password,
+        couchUser: resources.user,
+        couchPassword: resources.password,
         host: resources.host,
         dbName: resources.dbName,
         protocol: resources.protocol,

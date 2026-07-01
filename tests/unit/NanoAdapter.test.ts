@@ -5,7 +5,7 @@ import { PersistenceKeys, Context } from "@decaf-ts/core";
 import { Logging } from "@decaf-ts/logging";
 
 function makeAdapter(overrides: any = {}) {
-  const cfg = { user: "u", password: "p", host: "h", dbName: "db" } as any;
+  const cfg = { couchUser: "u", couchPassword: "p", host: "h", dbName: "db" } as any;
   const adp = new NanoAdapter(cfg, `test-${Math.random()}`);
   // inject fake client
   (adp as any)._client = {
@@ -37,6 +37,16 @@ describe("NanoAdapter core methods", () => {
       {}
     );
     expect(res.user).toEqual({ name: "u" });
+  });
+
+  test("flags uses stored context user before defaulting to config user", async () => {
+    const adp = makeAdapter();
+    const res: any = await (adp as any).flags(
+      OperationKeys.CREATE,
+      class {},
+      { user: { name: "alice" } }
+    );
+    expect(res.user).toEqual({ name: "alice" });
   });
 
   test("flags preserves forceNamedIndexes overrides", async () => {

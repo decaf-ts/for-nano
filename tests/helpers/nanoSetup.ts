@@ -4,8 +4,8 @@ import { createNanoTestResources } from "./nano";
 export async function setupNanoAdapter(prefix: string) {
   const resources = await createNanoTestResources(prefix);
   const adapter = new NanoAdapter({
-    user: resources.user,
-    password: resources.password,
+    couchUser: resources.user,
+    couchPassword: resources.password,
     host: resources.host,
     dbName: resources.dbName,
     protocol: resources.protocol,

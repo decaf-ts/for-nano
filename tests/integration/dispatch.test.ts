@@ -21,8 +21,8 @@ describe("NanoDispatch integration", () => {
   beforeAll(async () => {
     resources = await createNanoTestResources("dispatch");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,
@@ -114,8 +114,8 @@ describe("NanoDispatch integration", () => {
   it("supports proxied adapters configured via for()", async () => {
     const standaloneAdapter = new NanoAdapter(
       {
-        user: resources.user,
-        password: resources.password,
+        couchUser: resources.user,
+        couchPassword: resources.password,
         host: resources.host,
         dbName: resources.dbName,
         protocol: resources.protocol,

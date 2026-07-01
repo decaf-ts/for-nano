@@ -155,8 +155,8 @@ describe("Views Integration", () => {
   beforeAll(async () => {
     resources = await createNanoTestResources("views");
     adapter = new NanoAdapter({
-      user: resources.user,
-      password: resources.password,
+      couchUser: resources.user,
+      couchPassword: resources.password,
       host: resources.host,
       dbName: resources.dbName,
       protocol: resources.protocol,

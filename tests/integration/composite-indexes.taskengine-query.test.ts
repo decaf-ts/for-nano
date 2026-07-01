@@ -69,8 +69,8 @@ describe("@index composite properties on nano", () => {
     resources = await createNanoTestResources("composite_taskengine_query");
     adapter = new NanoAdapter(
       {
-        user: resources.user,
-        password: resources.password,
+        couchUser: resources.user,
+        couchPassword: resources.password,
         host: resources.host,
         dbName: resources.dbName,
         protocol: resources.protocol,
