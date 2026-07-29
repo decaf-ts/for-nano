@@ -102,6 +102,7 @@
     "nano": "^10.1.4"
   },
   "overrides": {
-    "js-yaml": "^4.2.0"
+    "test-exclude": "^7.0.2",
+    "brace-expansion": "^5.0.8"
   }
 }
