@@ -271,7 +271,7 @@ export class AddIsActiveMigration implements Migration<any, NanoAdapter> {
 ```
 
 ```ts
-const migrations = await MigrationService.migrateAdapters(
+const migrationService = await MigrationService.migrateAdapters(
   [nanoAdapter],
   {
     toVersion: "1.1.0",
@@ -288,9 +288,7 @@ const migrations = await MigrationService.migrateAdapters(
     },
   }
 );
-for (const migration of migrations) {
-  await migration.track();
-}
+await migrationService.track();
 ```
 
 `MigrationService` starts by calling the flavour-specific `retrieveLastVersion` handler so it knows which version the database already holds, then filters decorated migrations whose normalized versions are strictly greater than `currentVersion` and less than or equal to `toVersion`. `setCurrentVersion` is invoked after every successfully completed version: inline runs update once at the very end, while task mode updates immediately after each tracked `CompositeTask`. This guarantees the recorded `currentVersion` always equals the last fully finished hop, so rerunning the command will skip completed versions and replay only the pending ones. When a task fails, call `MigrationService.retry(taskId)` (optionally `taskService.track(id)` to observe progress) to reset the `TaskModel` to `PENDING`, clear its error/lease metadata, and let the TaskEngine reclaim the same version without revisiting already finished steps.
