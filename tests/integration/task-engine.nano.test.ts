@@ -15,9 +15,11 @@ import {
   TaskModel,
   TaskService,
   TaskStatus,
+  TaskType,
   TaskEngine,
   task,
 } from "@decaf-ts/core/tasks";
+import { sleep } from "@decaf-ts/core";
 import { TaskEngineConfig } from "@decaf-ts/core/tasks/types";
 import {
   cleanupNanoTestResources,
@@ -136,6 +138,151 @@ class NanoDynamicTailTask extends TaskHandler<void, number> {
   }
 }
 
+@task("nano-concurrent-shared-lock-step")
+class NanoConcurrentSharedLockStep extends TaskHandler<
+  { label?: string; delayMs?: number } | void,
+  string
+> {
+  static starts: Record<string, number[]> = {};
+  static ends: Record<string, number[]> = {};
+
+  async run(input: { label?: string; delayMs?: number } | void, ctx: TaskContext) {
+    const payload = (input && typeof input === "object" ? input : {}) as {
+      label?: string;
+      delayMs?: number;
+    };
+    const label = payload.label ?? `step-${ctx.step}`;
+    const delayMs = payload.delayMs ?? 120;
+    NanoConcurrentSharedLockStep.starts[ctx.taskId] =
+      NanoConcurrentSharedLockStep.starts[ctx.taskId] ?? [];
+    NanoConcurrentSharedLockStep.ends[ctx.taskId] =
+      NanoConcurrentSharedLockStep.ends[ctx.taskId] ?? [];
+    NanoConcurrentSharedLockStep.starts[ctx.taskId].push(Date.now());
+    ctx.logger.info(`nano concurrent ${label} start`);
+    await ctx.flush();
+    await sleep(delayMs);
+    ctx.logger.info(`nano concurrent ${label} end`);
+    await ctx.flush();
+    NanoConcurrentSharedLockStep.ends[ctx.taskId].push(Date.now());
+    return label;
+  }
+}
+
+@task("nano-concurrent-shared-lock-retry-step")
+class NanoConcurrentSharedRetryLockStep extends TaskHandler<
+  { label?: string; delayMs?: number; retryOnce?: boolean } | void,
+  string
+> {
+  static starts: Record<string, number[]> = {};
+  static ends: Record<string, number[]> = {};
+  static attempts: Record<string, Record<string, number>> = {};
+
+  async run(
+    input: { label?: string; delayMs?: number; retryOnce?: boolean } | void,
+    ctx: TaskContext
+  ) {
+    const payload = (input && typeof input === "object" ? input : {}) as {
+      label?: string;
+      delayMs?: number;
+      retryOnce?: boolean;
+    };
+    const label = payload.label ?? `step-${ctx.step}`;
+    const delayMs = payload.delayMs ?? 120;
+    const retryOnce = payload.retryOnce ?? false;
+    const taskAttempts =
+      NanoConcurrentSharedRetryLockStep.attempts[ctx.taskId] ?? {};
+    const attempt = (taskAttempts[label] ?? 0) + 1;
+    taskAttempts[label] = attempt;
+    NanoConcurrentSharedRetryLockStep.attempts[ctx.taskId] = taskAttempts;
+
+    NanoConcurrentSharedRetryLockStep.starts[ctx.taskId] =
+      NanoConcurrentSharedRetryLockStep.starts[ctx.taskId] ?? [];
+    NanoConcurrentSharedRetryLockStep.ends[ctx.taskId] =
+      NanoConcurrentSharedRetryLockStep.ends[ctx.taskId] ?? [];
+    NanoConcurrentSharedRetryLockStep.starts[ctx.taskId].push(Date.now());
+    ctx.logger.info(`nano retry concurrent ${label} start attempt ${attempt}`);
+    await ctx.flush();
+    await sleep(delayMs);
+
+    if (retryOnce && attempt === 1) {
+      ctx.logger.warn(`nano retry concurrent ${label} requesting retry`);
+      await ctx.flush();
+      ctx.retry("intentional retry for concurrent batch stress");
+    }
+
+    NanoConcurrentSharedRetryLockStep.ends[ctx.taskId].push(Date.now());
+    ctx.logger.info(`nano retry concurrent ${label} end attempt ${attempt}`);
+    await ctx.flush();
+    return label;
+  }
+}
+
+@task("nano-concurrent-shared-lock-reschedule-step")
+class NanoConcurrentSharedRescheduleLockStep extends TaskHandler<
+  {
+    label?: string;
+    delayMs?: number;
+    rescheduleOnce?: boolean;
+    rescheduleDelayMs?: number;
+  } | void,
+  string
+> {
+  static starts: Record<string, number[]> = {};
+  static ends: Record<string, number[]> = {};
+  static attempts: Record<string, Record<string, number>> = {};
+
+  async run(
+    input:
+      | {
+          label?: string;
+          delayMs?: number;
+          rescheduleOnce?: boolean;
+          rescheduleDelayMs?: number;
+        }
+      | void,
+    ctx: TaskContext
+  ) {
+    const payload = (input && typeof input === "object" ? input : {}) as {
+      label?: string;
+      delayMs?: number;
+      rescheduleOnce?: boolean;
+      rescheduleDelayMs?: number;
+    };
+    const label = payload.label ?? `step-${ctx.step}`;
+    const delayMs = payload.delayMs ?? 120;
+    const rescheduleOnce = payload.rescheduleOnce ?? false;
+    const rescheduleDelayMs = payload.rescheduleDelayMs ?? 2000;
+    const taskAttempts =
+      NanoConcurrentSharedRescheduleLockStep.attempts[ctx.taskId] ?? {};
+    const attempt = (taskAttempts[label] ?? 0) + 1;
+    taskAttempts[label] = attempt;
+    NanoConcurrentSharedRescheduleLockStep.attempts[ctx.taskId] = taskAttempts;
+
+    NanoConcurrentSharedRescheduleLockStep.starts[ctx.taskId] =
+      NanoConcurrentSharedRescheduleLockStep.starts[ctx.taskId] ?? [];
+    NanoConcurrentSharedRescheduleLockStep.ends[ctx.taskId] =
+      NanoConcurrentSharedRescheduleLockStep.ends[ctx.taskId] ?? [];
+    NanoConcurrentSharedRescheduleLockStep.starts[ctx.taskId].push(Date.now());
+    ctx.logger.info(`nano reschedule concurrent ${label} start attempt ${attempt}`);
+    await ctx.flush();
+    await sleep(delayMs);
+
+    if (rescheduleOnce && attempt === 1) {
+      ctx.logger.warn(`nano reschedule concurrent ${label} requesting reschedule`);
+      await ctx.flush();
+      ctx.reschedule(
+        new Date(Date.now() + rescheduleDelayMs),
+        "intentional reschedule for concurrent batch stress"
+      );
+    }
+
+    NanoConcurrentSharedRescheduleLockStep.ends[ctx.taskId].push(Date.now());
+    ctx.logger.info(`nano reschedule concurrent ${label} end attempt ${attempt}`);
+    await ctx.flush();
+    return label;
+  }
+}
+
 describe("Nano task engine integration", () => {
   let adapter: NanoAdapter;
   let resources: NanoResources | undefined;
@@ -163,11 +310,12 @@ describe("Nano task engine integration", () => {
       leaseMs: 500,
       pollMsIdle: 1000,
       pollMsBusy: 200,
-      logTailMax: 200,
+      logTailMax: 5000,
       streamBufferSize: 5,
       maxLoggingBuffer: 100,
       loggingBufferTruncation: 10,
       gracefulShutdownMsTimeout: 4000,
+      maxConcurrentCompositeSteps: 2,
     };
 
     taskService = new TaskService();
@@ -404,4 +552,280 @@ describe("Nano task engine integration", () => {
     expect(updateEvents.length).toBeGreaterThan(0);
     expect(updateEvents[0].classification).toBe(TaskEventType.UPDATE);
   });
+
+  it("keeps concurrent locked step logs and outputs intact on NanoAdapter", async () => {
+    NanoConcurrentSharedLockStep.starts = {};
+    NanoConcurrentSharedLockStep.ends = {};
+
+    const composite = new CompositeTaskBuilder({
+      classification: "nano-concurrent-shared-lock",
+      atomicity: TaskType.COMPOSITE,
+      attempt: 0,
+      maxAttempts: 1,
+    })
+      .addStep("nano-concurrent-shared-lock-step")
+        .setInput({ label: "alpha", delayMs: 120 })
+        .setLock("nano-shared-concurrent")
+        .setAllowConcurrent(true)
+        .build()
+      .addStep("nano-concurrent-shared-lock-step")
+        .setInput({ label: "beta", delayMs: 120 })
+        .setLock("nano-shared-concurrent")
+        .setAllowConcurrent(true)
+        .build()
+      .build();
+
+    const startedAt = Date.now();
+    const { task, tracker } = await engine.push(composite, true);
+    const result = await tracker.resolve();
+    const elapsed = Date.now() - startedAt;
+
+    expect(result.stepResults).toHaveLength(2);
+    expect(result.stepResults.map((step) => step.output)).toEqual([
+      "alpha",
+      "beta",
+    ]);
+    expect(NanoConcurrentSharedLockStep.starts[task.id]).toHaveLength(2);
+    expect(NanoConcurrentSharedLockStep.ends[task.id]).toHaveLength(2);
+    expect(NanoConcurrentSharedLockStep.starts[task.id][1]).toBeLessThan(
+      NanoConcurrentSharedLockStep.ends[task.id][0]
+    );
+    expect(elapsed).toBeLessThan(8000);
+
+    const persisted = await taskRepo.read(task.id);
+    expect(persisted.stepResults?.map((step) => step.output)).toEqual([
+      "alpha",
+      "beta",
+    ]);
+    expect(
+      persisted.logTail?.filter((entry) => entry.msg.includes("nano concurrent"))
+        .length
+    ).toBeGreaterThanOrEqual(4);
+    expect(
+      persisted.logTail?.every(
+        (entry) => entry.step === 0 || entry.step === 1 || entry.step === undefined
+      )
+    ).toBe(true);
+  });
+
+  it("runs three concurrent batches and preserves all outputs and logs on NanoAdapter", async () => {
+    NanoConcurrentSharedLockStep.starts = {};
+    NanoConcurrentSharedLockStep.ends = {};
+
+    const batchSizes = [3, 5, 7] as const;
+    const labels: string[] = [];
+    const compositeBuilder = new CompositeTaskBuilder({
+      classification: "nano-concurrent-shared-lock-batches",
+      atomicity: TaskType.COMPOSITE,
+      attempt: 0,
+      maxAttempts: 1,
+    });
+
+    batchSizes.forEach((size, batchIndex) => {
+      const lock = `nano-shared-concurrent-batch-${batchIndex + 1}`;
+      for (let index = 0; index < size; index += 1) {
+        const label = `batch-${batchIndex + 1}-${index + 1}`;
+        labels.push(label);
+        compositeBuilder
+          .addStep("nano-concurrent-shared-lock-step")
+          .setInput({ label, delayMs: 120 })
+          .setLock(lock)
+          .setAllowConcurrent(true)
+          .build();
+      }
+    });
+
+    const composite = compositeBuilder.build();
+    const { task, tracker } = await engine.push(composite, true);
+    const result = await tracker.resolve();
+
+    expect(result.stepResults).toHaveLength(labels.length);
+    expect(result.stepResults.map((step) => step.output)).toEqual(labels);
+
+    const starts = NanoConcurrentSharedLockStep.starts[task.id];
+    const ends = NanoConcurrentSharedLockStep.ends[task.id];
+    expect(starts).toHaveLength(labels.length);
+    expect(ends).toHaveLength(labels.length);
+
+    let offset = 0;
+    batchSizes.forEach((size) => {
+      const batchStarts = starts.slice(offset, offset + size);
+      const batchEnds = ends.slice(offset, offset + size);
+      expect(batchStarts).toHaveLength(size);
+      expect(batchEnds).toHaveLength(size);
+      expect(batchStarts[1]).toBeLessThan(batchEnds[0]);
+      offset += size;
+    });
+
+    const persisted = await taskRepo.read(task.id);
+    expect(persisted.stepResults?.map((step) => step.output)).toEqual(labels);
+
+    const concurrentLogs =
+      persisted.logTail?.filter((entry) => entry.msg.startsWith("nano concurrent batch-")) ??
+      [];
+    expect(concurrentLogs).toHaveLength(labels.length * 2);
+    for (const label of labels) {
+      expect(
+        concurrentLogs.some((entry) => entry.msg.includes(`nano concurrent ${label} start`))
+      ).toBe(true);
+      expect(
+        concurrentLogs.some((entry) => entry.msg.includes(`nano concurrent ${label} end`))
+      ).toBe(true);
+    }
+  }, 60000);
+
+  it("retries one step across concurrent batches without dropping logs or results on NanoAdapter", async () => {
+    NanoConcurrentSharedRetryLockStep.starts = {};
+    NanoConcurrentSharedRetryLockStep.ends = {};
+    NanoConcurrentSharedRetryLockStep.attempts = {};
+
+    const batchSizes = [3, 5, 7] as const;
+    const labels: string[] = [];
+    const retryLabel = "batch-2-5";
+    const compositeBuilder = new CompositeTaskBuilder({
+      classification: "nano-concurrent-shared-lock-retry-batches",
+      atomicity: TaskType.COMPOSITE,
+      attempt: 0,
+      maxAttempts: 2,
+    });
+
+    batchSizes.forEach((size, batchIndex) => {
+      const lock = `nano-shared-concurrent-retry-batch-${batchIndex + 1}`;
+      for (let index = 0; index < size; index += 1) {
+        const label = `batch-${batchIndex + 1}-${index + 1}`;
+        labels.push(label);
+        compositeBuilder
+          .addStep("nano-concurrent-shared-lock-retry-step")
+          .setInput({
+            label,
+            delayMs: 100,
+            retryOnce: label === retryLabel,
+          })
+          .setLock(lock)
+          .setAllowConcurrent(true)
+          .build();
+      }
+    });
+
+    const composite = compositeBuilder.build();
+    const { task, tracker } = await engine.push(composite, true);
+    const result = await tracker.resolve();
+
+    expect(result.stepResults).toHaveLength(labels.length);
+    expect(result.stepResults.map((step) => step.output)).toEqual(labels);
+
+    const attempts = NanoConcurrentSharedRetryLockStep.attempts[task.id];
+    expect(attempts).toBeDefined();
+    expect(attempts?.[retryLabel]).toBe(2);
+    for (const label of labels) {
+      if (label !== retryLabel) {
+        expect(attempts?.[label]).toBe(1);
+      }
+    }
+
+    const persisted = await taskRepo.read(task.id);
+    expect(persisted.stepResults?.map((step) => step.output)).toEqual(labels);
+
+    const logs = persisted.logTail ?? [];
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano retry concurrent ${retryLabel} start attempt 1`)
+      )
+    ).toBe(true);
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano retry concurrent ${retryLabel} requesting retry`)
+      )
+    ).toBe(true);
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano retry concurrent ${retryLabel} start attempt 2`)
+      )
+    ).toBe(true);
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano retry concurrent ${retryLabel} end attempt 2`)
+      )
+    ).toBe(true);
+  }, 90000);
+
+  it("reschedules one step across concurrent batches without dropping logs or results on NanoAdapter", async () => {
+    NanoConcurrentSharedRescheduleLockStep.starts = {};
+    NanoConcurrentSharedRescheduleLockStep.ends = {};
+    NanoConcurrentSharedRescheduleLockStep.attempts = {};
+
+    const batchSizes = [3, 5, 7] as const;
+    const labels: string[] = [];
+    const rescheduleLabel = "batch-2-5";
+    const compositeBuilder = new CompositeTaskBuilder({
+      classification: "nano-concurrent-shared-lock-reschedule-batches",
+      atomicity: TaskType.COMPOSITE,
+      attempt: 0,
+      maxAttempts: 2,
+    });
+
+    batchSizes.forEach((size, batchIndex) => {
+      const lock = `nano-shared-concurrent-reschedule-batch-${batchIndex + 1}`;
+      for (let index = 0; index < size; index += 1) {
+        const label = `batch-${batchIndex + 1}-${index + 1}`;
+        labels.push(label);
+        compositeBuilder
+          .addStep("nano-concurrent-shared-lock-reschedule-step")
+          .setInput({
+            label,
+            delayMs: 100,
+            rescheduleOnce: label === rescheduleLabel,
+            rescheduleDelayMs: 2000,
+          })
+          .setLock(lock)
+          .setAllowConcurrent(true)
+          .build();
+      }
+    });
+
+    const composite = compositeBuilder.build();
+    const { task, tracker } = await engine.push(composite, true);
+
+    const scheduledTask = await waitForTaskStatus(task.id, TaskStatus.SCHEDULED);
+    expect(scheduledTask.status).toBe(TaskStatus.SCHEDULED);
+
+    const result = await tracker.wait();
+    expect(result.stepResults).toHaveLength(labels.length);
+    expect(result.stepResults.map((step) => step.output)).toEqual(labels);
+
+    const attempts = NanoConcurrentSharedRescheduleLockStep.attempts[task.id];
+    expect(attempts).toBeDefined();
+    expect(attempts?.[rescheduleLabel]).toBe(2);
+    for (const label of labels) {
+      if (label !== rescheduleLabel) {
+        expect(attempts?.[label]).toBe(1);
+      }
+    }
+
+    const persisted = await taskRepo.read(task.id);
+    expect(persisted.status).toBe(TaskStatus.SUCCEEDED);
+    expect(persisted.stepResults?.map((step) => step.output)).toEqual(labels);
+
+    const logs = persisted.logTail ?? [];
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano reschedule concurrent ${rescheduleLabel} start attempt 1`)
+      )
+    ).toBe(true);
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano reschedule concurrent ${rescheduleLabel} requesting reschedule`)
+      )
+    ).toBe(true);
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano reschedule concurrent ${rescheduleLabel} start attempt 2`)
+      )
+    ).toBe(true);
+    expect(
+      logs.some((entry) =>
+        entry.msg.includes(`nano reschedule concurrent ${rescheduleLabel} end attempt 2`)
+      )
+    ).toBe(true);
+  }, 90000);
 });
