@@ -11,6 +11,7 @@ import {
   index,
   OrderDirection,
   pk,
+  table,
 } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 import {
@@ -208,6 +209,25 @@ class DefaultStringQueryModel extends BaseModel {
   attr2?: string = undefined;
 
   constructor(arg?: ModelArg<DefaultStringQueryModel>) {
+    super(arg);
+  }
+}
+
+@uses("nano")
+@table("product_gtin_boundary")
+@model()
+class GtinProductModel extends BaseModel {
+  @pk({ type: String })
+  @defaultQueryAttr()
+  productCode!: string;
+
+  @required()
+  inventedName!: string;
+
+  @required()
+  nameMedicinalProduct!: string;
+
+  constructor(arg?: ModelArg<GtinProductModel>) {
     super(arg);
   }
 }
@@ -498,5 +518,78 @@ const expectedDescNames = [...expectedAscNames].reverse();
     expect(descPage.data.map((record) => record.searchName)).toEqual(
       expectedDescNames.slice(0, pageLimit)
     );
+  });
+});
+
+describe("GTIN prefix boundaries on nano", () => {
+  const gtin = "98765432109879";
+  const nextGtin = "98765432109880";
+
+  let setupData: Awaited<ReturnType<typeof setupNanoAdapter>>;
+  let productRepo: NanoRepository<GtinProductModel>;
+
+  beforeAll(async () => {
+    setupData = await setupNanoAdapter("gtin_boundary");
+    productRepo = new NanoRepository(setupData.adapter, GtinProductModel);
+    await productRepo.create(
+      new GtinProductModel({
+        productCode: gtin,
+        inventedName: "gtin-boundary-product",
+        nameMedicinalProduct: "gtin-boundary-medicine",
+      })
+    );
+  });
+
+  afterAll(async () => {
+    await cleanupNanoTestResources(setupData.resources);
+  });
+
+  function findProductCodeRange(selector: any): Record<string, any> | undefined {
+    const queue = [selector];
+    while (queue.length) {
+      const node = queue.shift();
+      if (!node || typeof node !== "object") continue;
+      if (
+        node.productCode &&
+        typeof node.productCode === "object" &&
+        (Object.prototype.hasOwnProperty.call(node.productCode, "$gte") ||
+          Object.prototype.hasOwnProperty.call(node.productCode, "$lt"))
+      ) {
+        return node.productCode as Record<string, any>;
+      }
+      for (const value of Object.values(node)) {
+        if (Array.isArray(value)) queue.push(...value);
+        else if (value && typeof value === "object") queue.push(value);
+      }
+    }
+    return undefined;
+  }
+
+  it("builds a correct exclusive upper bound for find() and page() with a full GTIN ending in 9", async () => {
+    const adapter = setupData.adapter as any;
+    const originalRaw = Object.getPrototypeOf(adapter).raw.bind(adapter);
+    const rawSpy = jest
+      .spyOn(adapter, "raw")
+      .mockImplementation(async (...args: any[]) => originalRaw(...args));
+
+    const found = await productRepo.find(gtin, OrderDirection.DSC);
+    const paged = await productRepo.page(gtin, OrderDirection.DSC, {
+      offset: 1,
+      limit: 1,
+    });
+
+    expect(found.map((product) => product.productCode)).toEqual([gtin]);
+    expect(paged.data.map((product) => product.productCode)).toEqual([gtin]);
+    expect(rawSpy).toHaveBeenCalledTimes(2);
+
+    const findQuery = rawSpy.mock.calls[0][0] as any;
+    const pageQuery = rawSpy.mock.calls[1][0] as any;
+    const findRange = findProductCodeRange(findQuery.selector);
+    const pageRange = findProductCodeRange(pageQuery.selector);
+
+    expect(findRange?.$gte).toBe(gtin);
+    expect(findRange?.$lt).toBe(nextGtin);
+    expect(pageRange?.$gte).toBe(gtin);
+    expect(pageRange?.$lt).toBe(nextGtin);
   });
 });
