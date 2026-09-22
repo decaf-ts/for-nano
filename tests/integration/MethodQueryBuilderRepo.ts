@@ -75,6 +75,9 @@ export class TestUserModel extends BaseModel {
   @required()
   active!: boolean;
 
+  @column("nickname")
+  nickname?: string;
+
   constructor(arg?: ModelArg<TestUserModel>) {
     super(arg);
   }
@@ -121,6 +124,37 @@ export class MethodQueryBuilderRepo extends Repository<TestUserModel, any> {
     limit?: number,
     offset?: number
   ): Promise<TestUserModel[]> {
+    throw new UnsupportedError(`Method overridden by @query decorator.`);
+  }
+
+  @query()
+  existsByName(
+    name: string,
+    orderBy?: OrderBySelector<any>[],
+    limit?: number,
+    offset?: number
+  ): Promise<boolean> {
+    throw new UnsupportedError(`Method overridden by @query decorator.`);
+  }
+
+  @query()
+  existsByNameAndCountry(
+    name: string,
+    country: string,
+    orderBy?: OrderBySelector<any>[],
+    limit?: number,
+    offset?: number
+  ): Promise<boolean> {
+    throw new UnsupportedError(`Method overridden by @query decorator.`);
+  }
+
+  @query()
+  existsByNickname(
+    nickname: string,
+    orderBy?: OrderBySelector<any>[],
+    limit?: number,
+    offset?: number
+  ): Promise<boolean> {
     throw new UnsupportedError(`Method overridden by @query decorator.`);
   }
 

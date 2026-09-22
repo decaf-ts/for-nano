@@ -96,6 +96,24 @@ describeMethodQueryBuilder("Nano MethodQueryBuilder Decorator", () => {
     });
   });
 
+  describe("Exists", () => {
+    it("should return true for existsByName when the field is present on records", async () => {
+      await expect(userRepo.existsByName("John Smith")).resolves.toBe(true);
+    });
+
+    it("should return false for existsByNickname when the field is absent on every record", async () => {
+      await expect(userRepo.existsByNickname("John Smith")).resolves.toBe(
+        false
+      );
+    });
+
+    it("should return true for existsByNameAndCountry when both fields are present", async () => {
+      await expect(
+        userRepo.existsByNameAndCountry("John Smith", "TH")
+      ).resolves.toBe(true);
+    });
+  });
+
   describe("OrderBy", () => {
     it.skip("should order by name ascending", async () => {
       const orderByResult = await userRepo.findByActiveOrderByName(
