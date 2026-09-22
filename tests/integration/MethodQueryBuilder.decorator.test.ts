@@ -1,5 +1,5 @@
 import { Model } from "@decaf-ts/decorator-validation";
-import { OrderDirection, QueryError } from "@decaf-ts/core";
+import { Condition, OrderDirection, QueryError } from "@decaf-ts/core";
 import { getRepo } from "./MethodQueryBuilderRepo";
 import { NanoAdapter } from "../../src";
 import {
@@ -111,6 +111,25 @@ describeMethodQueryBuilder("Nano MethodQueryBuilder Decorator", () => {
       await expect(
         userRepo.existsByNameAndCountry("John Smith", "TH")
       ).resolves.toBe(true);
+    });
+
+    it("should return every record for a negated exists condition on an absent field", async () => {
+      const results = await userRepo
+        .select()
+        .where(Condition.attribute("nickname").exists(false))
+        .execute();
+
+      expect(results.length).toBe(10);
+      expect(results.every((u: any) => u.nickname === undefined)).toBe(true);
+    });
+
+    it("should return no records for a positive exists condition on an absent field", async () => {
+      const results = await userRepo
+        .select()
+        .where(Condition.attribute("nickname").exists())
+        .execute();
+
+      expect(results).toEqual([]);
     });
   });
 
