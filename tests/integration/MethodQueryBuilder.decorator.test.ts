@@ -131,6 +131,21 @@ describeMethodQueryBuilder("Nano MethodQueryBuilder Decorator", () => {
 
       expect(results).toEqual([]);
     });
+
+    it("should resolve the prepared existsNotOf path for a negated condition", async () => {
+      const stmt = userRepo
+        .override({ forcePrepareSimpleQueries: true })
+        .select()
+        .where(Condition.attribute("nickname").exists(false));
+
+      await stmt.prepare();
+
+      expect((stmt as any).prepared).toMatchObject({
+        method: "existsNotOf",
+        args: ["nickname"],
+      });
+      await expect(stmt.execute()).resolves.toBe(true);
+    });
   });
 
   describe("OrderBy", () => {
