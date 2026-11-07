@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { Observer, PersistenceKeys } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";
 import { Model } from "@decaf-ts/decorator-validation";

@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { BaseModel, PersistenceKeys, pk } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 import {

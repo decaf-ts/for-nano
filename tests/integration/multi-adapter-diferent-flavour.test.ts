@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { uses } from "@decaf-ts/decoration";
 import { Adapter } from "@decaf-ts/core";
 import { RamAdapter, RamFlavour } from "@decaf-ts/core/ram";

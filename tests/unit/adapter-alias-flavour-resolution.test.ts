@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { createdBy, Adapter } from "@decaf-ts/core";
 import { uses } from "@decaf-ts/decoration";
 import { Model, model, type ModelArg } from "@decaf-ts/decorator-validation";

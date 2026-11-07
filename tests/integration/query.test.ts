@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { NanoAdapter, NanoRepository } from "../../src";
 import { createNanoTestResources, cleanupNanoTestResources } from "../helpers/nano";
 import { nanoRepository } from "../helpers/repository";

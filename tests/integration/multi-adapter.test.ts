@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { Metadata } from "@decaf-ts/decoration";
 import { TestCountryModel } from "./models";
 console.log(`before all: ${Metadata.flavourOf(TestCountryModel)}`);

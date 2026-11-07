@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { Adapter } from "@decaf-ts/core";
 import { AbsMigration, migration, MigrationService } from "@decaf-ts/core/migrations";
 import { RamAdapter } from "@decaf-ts/core/ram";

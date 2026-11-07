@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { Model } from "@decaf-ts/decorator-validation";
 import { repository, Repository } from "@decaf-ts/core";
 import { CouchDBRepository } from "@decaf-ts/for-couchdb";

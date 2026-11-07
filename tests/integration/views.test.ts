@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import {
   BaseModel,
   Condition,
@@ -171,7 +172,7 @@ describe("Views Integration", () => {
       aggDoc = await adapter.client.get("_design/agg_ddoc");
       viewDoc = await adapter.client.get("_design/view_ddoc");
     } catch (e: any) {
-      throw new Error(`Design doc missing: ${e?.reason || e?.message || e}`);
+      throw new Error(`Design doc missing: ${e?.reason || e?.message || e}`, { cause: e });
     }
     expect(Object.keys(aggDoc.views || {})).toContain("count_active");
     expect(Object.keys(viewDoc.views || {})).toContain("by_status");

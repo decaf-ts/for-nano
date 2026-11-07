@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { Model } from "@decaf-ts/decorator-validation";
 import { Condition, OrderDirection, QueryError } from "@decaf-ts/core";
 import { getRepo } from "./MethodQueryBuilderRepo";
