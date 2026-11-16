@@ -8,6 +8,10 @@ on:
     branches: [ master, main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   coverage:
     uses: decaf-ts/reusable-actions/.github/workflows/jest-coverage.yaml@master
